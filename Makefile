@@ -24,10 +24,13 @@ build: setup
 	@echo "🔨 Building..."
 	cmake --build $(BUILD_DIR)
 
-# New test command
 test: build
 	@echo "🧪 Running unit tests..."
 	ctest --output-on-failure -j$(sysctl -n hw.ncpu) --test-dir build
+
+esp32:
+	@echo "🚀 Flashing hardware test"
+	pio test -d examples/basic
 
 clean:
 	@echo "🧹 Cleaning up..."

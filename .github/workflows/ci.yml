@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  native-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format cmake g++ make
+
+      - name: Check code format
+        run: make check-format
+
+      - name: Configure (CMake)
+        run: cmake -Bbuild -DNATIVE_BUILD=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test (CTest)
+        run: ctest --output-on-failure --test-dir build
+
+  pio-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup Python
+      run: |
+        apt-get update -y && apt-get install python3-pip -y
+        pip install platformio
+
+    - name: Run PlatformIO
+      run: pio ci -c examples/basic/platformio.ini examples/basic/src/main.cpp --lib="."

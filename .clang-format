@@ -1,0 +1,14 @@
+BasedOnStyle: Google
+IndentWidth: 2
+LineEnding: LF
+ContinuationIndentWidth: 4
+TabWidth: 2
+UseTab: Never
+ColumnLimit: 100
+DeriveLineEnding: false
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AlignAfterOpenBracket: AlwaysBreak
+AllowShortBlocksOnASingleLine: true
+BreakBeforeTernaryOperators: true
+

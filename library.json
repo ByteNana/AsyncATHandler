@@ -1,0 +1,19 @@
+{
+  "name": "YourLib",
+  "version": "0.1.0",
+  "description": "My awesome Arduino library",
+  "keywords": ["arduino", "sensor", "example"],
+  "authors": [
+    {
+      "name": "Your Name",
+      "email": "your@email.com"
+    }
+  ],
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32" ],
+  "export": {
+    "include": [
+      "src/*"
+    ]
+  }
+}

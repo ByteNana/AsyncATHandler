@@ -10,15 +10,11 @@ EXT_FILTER := $(wordlist 1,$(shell echo $$(($(words $(EXT_FILTER)) - 1))),$(EXT_
 
 FILES := $(shell find $(SRC_DIRS) -type f \( $(EXT_FILTER) \))
 
-all: build symlink
+all: build
 
-.symlink:
-	@echo "🔗 Symlinking compile_commands.json"
-	ln -sf $(BUILD_DIR)/$(CCDB) .
-
-setup: .symlink
+setup:
 	@echo "🔧 Running cmake..."
-	cmake -B$(BUILD_DIR) -DNATIVE_BUILD=ON
+	cmake -B$(BUILD_DIR) -DASYNCAT_HANDLER_BUILD_TESTS=ON
 
 build: setup
 	@echo "🔨 Building..."

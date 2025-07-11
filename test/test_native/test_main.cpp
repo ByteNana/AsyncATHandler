@@ -28,10 +28,16 @@ class AsyncATHandlerTest : public ::testing::Test {
 
   void TearDown() override {
     if (handler) {
-      handler->end();  // This will stop the task and clean up FreeRTOS resources
+      handler->end();
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
       delete handler;
+      handler = nullptr;
     }
-    delete mockStream;
+    if (mockStream) {
+      log_w("this");
+      delete mockStream;
+      mockStream = nullptr;
+    }
   }
 
   void WaitFor(int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }

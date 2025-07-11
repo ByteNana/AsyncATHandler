@@ -6,10 +6,11 @@
 
 #include <functional>
 
-#include "ATHandler.settings.h"
+#include "ATHandler.settings.h"  // Includes the updated struct definitions
 #include "freertos/FreeRTOS.h"
 
-typedef std::function<void(const String &response)> UnsolicitedCallback;
+// Define the UnsolicitedCallback type to accept const char*
+typedef std::function<void(const char *response)> UnsolicitedCallback;
 
 class AsyncATHandler {
  private:
@@ -19,7 +20,8 @@ class AsyncATHandler {
   QueueHandle_t responseQueue;
   SemaphoreHandle_t mutex;
   uint32_t nextCommandId;
-  String responseBuffer;
+  char responseBuffer[AT_RESPONSE_BUFFER_SIZE];
+  size_t responseBufferPos;
   UnsolicitedCallback unsolicitedCallback;
   volatile bool running;
 
@@ -28,8 +30,8 @@ class AsyncATHandler {
   // Task function
   static void readerTaskFunction(void *parameter);
   void processIncomingData();
-  void handleResponse(const String &response);
-  bool isUnsolicitedResponse(const String &response);
+  void handleResponse(const char *response);
+  bool isUnsolicitedResponse(const char *response);
 
  public:
   AsyncATHandler();

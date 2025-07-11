@@ -1,8 +1,13 @@
 #include "AsyncATHandler.h"
 
+#include <string.h>  // For strncpy, strlen, strncmp, strstr
+
 #include "ATHandler.settings.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+
+// Helper function to convert char array to String (for public API return)
+static String charArrayToString(const char* arr) { return String(arr); }
 
 AsyncATHandler::AsyncATHandler()
     : _stream(nullptr),
@@ -11,25 +16,41 @@ AsyncATHandler::AsyncATHandler()
       responseQueue(nullptr),
       mutex(nullptr),
       nextCommandId(1),
-      responseBuffer(""),
       unsolicitedCallback(nullptr),
       running(false),
-      pendingSyncCommand() {}
+      pendingSyncCommand() {
+  // Initialize char array buffer
+  memset(responseBuffer, 0, sizeof(responseBuffer));
+  responseBufferPos = 0;
+}
 
 AsyncATHandler::~AsyncATHandler() {
-  end();
+  end();  // Ensure task is stopped and resources are cleaned up
+
+  // It's safer to delete resources only if they were successfully created
+  // and are not being used by a running task.
+  // The 'end()' method should handle stopping the task.
+  if (readerTask) {
+    // If for some reason the task is still running, try to delete it.
+    // This should ideally be handled by 'end()'.
+    vTaskDelete(readerTask);
+    readerTask = nullptr;
+  }
 
   if (mutex) {
     vSemaphoreDelete(mutex);
     log_d("Mutex deleted.");
+    mutex = nullptr;
   }
   if (commandQueue) {
     vQueueDelete(commandQueue);
     log_d("Command queue deleted.");
+    commandQueue = nullptr;
   }
   if (responseQueue) {
     vQueueDelete(responseQueue);
     log_d("Response queue deleted.");
+    responseQueue = nullptr;
   }
   log_d("Cleanup complete.");
 }
@@ -61,15 +82,16 @@ bool AsyncATHandler::begin(Stream& stream) {
     }
     return false;
   }
-  log_d("FreeRTOS resources created (mock).");
+  log_d("FreeRTOS resources created.");
 
   _stream = &stream;
   running = true;
   nextCommandId = 1;
-  responseBuffer = "";
+  memset(responseBuffer, 0, sizeof(responseBuffer));  // Clear buffer
+  responseBufferPos = 0;
   flushResponseQueue();
 
-  pendingSyncCommand = PendingCommandInfo();
+  pendingSyncCommand = PendingCommandInfo();  // Reset pending command info
 
   log_d("Creating reader task...");
   BaseType_t result = xTaskCreatePinnedToCore(
@@ -83,8 +105,9 @@ bool AsyncATHandler::begin(Stream& stream) {
     log_e("Failed to create reader task.");
     running = false;
     _stream = nullptr;
-    readerTask = nullptr;
+    readerTask = nullptr;  // Ensure task handle is null if creation failed
 
+    // Clean up resources if task creation failed
     if (mutex) {
       vSemaphoreDelete(mutex);
       mutex = nullptr;
@@ -107,16 +130,27 @@ void AsyncATHandler::end() {
     return;
   }
   log_d("Stopping handler...");
-  running = false;
+  running = false;  // Signal the task to exit its loop
 
+  // Give the reader task a moment to self-terminate
+  // It's generally better to use a notification or a flag for task termination
+  // and then vTaskDelete(readerTask) from the calling context if necessary,
+  // but a short delay can work if the task checks 'running' frequently.
   log_d("Delaying for task to exit: %lu ms", pdMS_TO_TICKS(100));
   vTaskDelay(pdMS_TO_TICKS(100));
 
-  if (readerTask) { readerTask = nullptr; }
+  if (readerTask) {
+    // If the task is still running after the delay, forcefully delete it.
+    // This should be done carefully as it can leave resources uncleaned if not managed.
+    // In a real-world scenario, prefer cooperative task termination.
+    vTaskDelete(readerTask);
+    readerTask = nullptr;
+    log_d("Reader task deleted.");
+  }
 
   _stream = nullptr;
   if (responseQueue) { flushResponseQueue(); }
-  pendingSyncCommand = PendingCommandInfo();
+  pendingSyncCommand = PendingCommandInfo();  // Reset pending command info
 
   log_d("Handler stopped.");
 }
@@ -132,9 +166,12 @@ bool AsyncATHandler::sendCommandAsync(const String& command) {
   cmd.id = nextCommandId++;
   xSemaphoreGive(mutex);
 
-  cmd.command = command;
+  // Copy command string to char array, ensuring null termination
+  strncpy(cmd.command, command.c_str(), AT_COMMAND_MAX_LENGTH - 1);
+  cmd.command[AT_COMMAND_MAX_LENGTH - 1] = '\0';  // Ensure null termination
+
   cmd.waitForResponse = false;
-  cmd.responseSemaphore = nullptr;
+  cmd.responseSemaphore = nullptr;  // Should be null for async commands
 
   BaseType_t queueSuccess = xQueueSend(commandQueue, &cmd, pdMS_TO_TICKS(AT_QUEUE_TIMEOUT));
 
@@ -158,8 +195,14 @@ bool AsyncATHandler::sendCommand(
   cmd.id = nextCommandId++;
   xSemaphoreGive(mutex);
 
-  cmd.command = command;
-  cmd.expectedResponse = expectedResponse;
+  // Copy command string to char array
+  strncpy(cmd.command, command.c_str(), AT_COMMAND_MAX_LENGTH - 1);
+  cmd.command[AT_COMMAND_MAX_LENGTH - 1] = '\0';
+
+  // Copy expected response string to char array
+  strncpy(cmd.expectedResponse, expectedResponse.c_str(), AT_EXPECTED_RESPONSE_MAX_LENGTH - 1);
+  cmd.expectedResponse[AT_EXPECTED_RESPONSE_MAX_LENGTH - 1] = '\0';
+
   cmd.timeout = timeout;
   cmd.waitForResponse = true;
   cmd.responseSemaphore = xSemaphoreCreateBinary();
@@ -170,22 +213,22 @@ bool AsyncATHandler::sendCommand(
   }
 
   log_d(
-      "Queuing (sync) cmd ID: %lu, Cmd: '%s', Expected: '%s'", cmd.id, cmd.command.c_str(),
-      cmd.expectedResponse.c_str());
+      "Queuing (sync) cmd ID: %lu, Cmd: '%s', Expected: '%s'", cmd.id, cmd.command,
+      cmd.expectedResponse);
 
-  // Send command tocommandQueue
+  // Send command to commandQueue
   BaseType_t queueSuccess = xQueueSend(commandQueue, &cmd, pdMS_TO_TICKS(AT_QUEUE_TIMEOUT));
 
   if (queueSuccess != pdTRUE) {
     log_e("Failed to send sync command to command queue for ID: %lu", cmd.id);
-    vSemaphoreDelete(cmd.responseSemaphore);
+    vSemaphoreDelete(cmd.responseSemaphore);  // Clean up semaphore if queue send fails
     return false;
   }
 
   log_d("Waiting on semaphore for cmd ID: %lu (Timeout: %lu ms)", cmd.id, timeout);
   BaseType_t semaphoreTaken = xSemaphoreTake(cmd.responseSemaphore, pdMS_TO_TICKS(timeout));
 
-  vSemaphoreDelete(cmd.responseSemaphore);
+  vSemaphoreDelete(cmd.responseSemaphore);  // Always delete the semaphore after use
   cmd.responseSemaphore = nullptr;
 
   if (semaphoreTaken == pdTRUE) {
@@ -193,50 +236,62 @@ bool AsyncATHandler::sendCommand(
     bool finalResponseReceived = false;
     bool overallSuccess = false;
 
+    // Acquire mutex to safely access responseQueue
     xSemaphoreTake(mutex, pdMS_TO_TICKS(AT_QUEUE_TIMEOUT));
 
+    // Iterate through responses in the queue that belong to this command ID
+    // We might need to receive more than initialQueueSize if the reader task
+    // puts more responses in while we are processing.
+    // The '+ 5' is a heuristic, better to check for finalResponseReceived.
     size_t initialQueueSize = uxQueueMessagesWaiting(responseQueue);
-
-    for (size_t i = 0; i < initialQueueSize + 5; ++i) {
+    for (size_t i = 0; i < initialQueueSize + AT_RESPONSE_QUEUE_SIZE; ++i) {
       ATResponse receivedResp;
+      // Try to receive a response without blocking
       if (xQueueReceive(responseQueue, &receivedResp, 0) == pdTRUE) {
         if (receivedResp.commandId == cmd.id) {
-          fullCollectedResponse += receivedResp.response;
+          fullCollectedResponse += charArrayToString(receivedResp.response);
 
           // Determine if this is the final response based on content
-          if (receivedResp.response.startsWith("OK\r\n")) {
+          if (strncmp(receivedResp.response, "OK\r\n", 4) == 0) {
             overallSuccess = true;
             finalResponseReceived = true;
-          } else if (receivedResp.response.startsWith("ERROR\r\n")) {
+          } else if (strncmp(receivedResp.response, "ERROR\r\n", 7) == 0) {
             overallSuccess = false;
             finalResponseReceived = true;
           }
         } else {
-          // Not our response, put it back. (This is the risky part in your original logic)
+          // Not our response, put it back.
+          // This is still a tricky part. If the queue is full, it won't go back.
+          // A better design might involve separate queues per command or a more
+          // robust filtering mechanism in the reader task.
           if (xQueueSend(responseQueue, &receivedResp, 0) != pdTRUE) {
             log_w("Could not re-queue unmatched response for ID: %lu", receivedResp.commandId);
           }
         }
       } else {
-        // No more items currently in queue. If we haven't received final response, break.
+        // No more items currently in queue.
         if (!finalResponseReceived) {
           log_d("No more items in queue for ID: %lu. Breaking collection.", cmd.id);
         }
-        break;
+        break;  // Exit loop if no more responses are immediately available
       }
       if (finalResponseReceived) {
         log_d("Final response received for ID: %lu. Breaking collection.", cmd.id);
-        break;
+        break;  // Exit loop once final response is found
       }
     }
-    xSemaphoreGive(mutex);
+    xSemaphoreGive(mutex);  // Release mutex
 
-    response = fullCollectedResponse;
+    response = fullCollectedResponse;  // Assign collected response to output parameter
 
-    if (overallSuccess && cmd.expectedResponse.length() > 0 &&
-        !cmd.expectedResponse.startsWith("OK") &&
-        fullCollectedResponse.indexOf(cmd.expectedResponse) == -1) {
+    // Additional check for specific expected response if it's not "OK"
+    if (overallSuccess && strlen(cmd.expectedResponse) > 0 &&
+        strncmp(cmd.expectedResponse, "OK", 2) != 0 &&
+        strstr(fullCollectedResponse.c_str(), cmd.expectedResponse) == nullptr) {
       overallSuccess = false;  // Specific expected response not found
+      log_w(
+          "Specific expected response '%s' not found in '%s' for cmd ID: %lu", cmd.expectedResponse,
+          fullCollectedResponse.c_str(), cmd.id);
     }
 
     if (!finalResponseReceived) {
@@ -268,7 +323,7 @@ bool AsyncATHandler::sendCommandBatch(
 }
 
 void AsyncATHandler::setUnsolicitedCallback(UnsolicitedCallback callback) {
-  // Check ifmutex exists before taking it
+  // Check if mutex exists before taking it
   if (mutex && xSemaphoreTake(mutex, portMAX_DELAY) == pdTRUE) {
     unsolicitedCallback = callback;
     xSemaphoreGive(mutex);
@@ -279,7 +334,7 @@ void AsyncATHandler::setUnsolicitedCallback(UnsolicitedCallback callback) {
 }
 
 bool AsyncATHandler::hasResponse() {
-  // Check ifresponseQueue and _mutex exist before using them
+  // Check if responseQueue and mutex exist before using them
   if (!responseQueue || !mutex) { return false; }
   BaseType_t result = pdFALSE;
   if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
@@ -294,11 +349,11 @@ bool AsyncATHandler::hasResponse() {
 ATResponse AsyncATHandler::getResponse() {
   ATResponse resp;
   resp.commandId = 0;
-  resp.response = "";
+  memset(resp.response, 0, sizeof(resp.response));  // Clear char array
   resp.success = false;
   resp.timestamp = 0;
 
-  // Check ifresponseQueue and _mutex exist before using them
+  // Check if responseQueue and mutex exist before using them
   if (!responseQueue || !mutex) {
     log_e("Resources not initialized.");
     return resp;
@@ -307,8 +362,8 @@ ATResponse AsyncATHandler::getResponse() {
   if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
     if (xQueueReceive(responseQueue, &resp, 0) == pdTRUE) {
       log_d(
-          "Retrieved response: cmdID=%lu, response='%s', success=%s", resp.commandId,
-          resp.response.c_str(), (resp.success ? "TRUE" : "FALSE"));
+          "Retrieved response: cmdID=%lu, response='%s', success=%s", resp.commandId, resp.response,
+          (resp.success ? "TRUE" : "FALSE"));
     } else {
       log_e("No response in queue or failed to receive.");
     }
@@ -366,22 +421,25 @@ void AsyncATHandler::readerTaskFunction(void* parameter) {
 
   while (handler->running) {
     ATCommand cmd;
+    // Try to receive a command from the queue without blocking indefinitely
     if (xSemaphoreTake(handler->mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
       if (xQueueReceive(handler->commandQueue, &cmd, pdMS_TO_TICKS(0)) == pdTRUE) {
         // Send the command to the actual stream
-        handler->_stream->println(cmd.command);
+        handler->_stream->println(cmd.command);  // println takes const char*
         handler->_stream->flush();
 
         if (cmd.waitForResponse) {
-          // Store this command's details as the currently pending synchronous command for THIS
-          // handler instance
+          // Store this command's details as the currently pending synchronous command
           handler->pendingSyncCommand.id = cmd.id;
           handler->pendingSyncCommand.responseSemaphore = cmd.responseSemaphore;
-          handler->pendingSyncCommand.expectedResponse = cmd.expectedResponse;
+          strncpy(
+              handler->pendingSyncCommand.expectedResponse, cmd.expectedResponse,
+              AT_EXPECTED_RESPONSE_MAX_LENGTH - 1);
+          handler->pendingSyncCommand.expectedResponse[AT_EXPECTED_RESPONSE_MAX_LENGTH - 1] = '\0';
           handler->pendingSyncCommand.active = true;
         } else {
-          // For fire-and-forget async commands, clean up semaphore if it exists (should be null for
-          // async)
+          // For fire-and-forget async commands, clean up semaphore if it exists
+          // (should be null for async commands, but good practice to check)
           if (cmd.responseSemaphore) { vSemaphoreDelete(cmd.responseSemaphore); }
         }
       }
@@ -390,54 +448,69 @@ void AsyncATHandler::readerTaskFunction(void* parameter) {
 
     handler->processIncomingData();
 
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(10));  // Small delay to yield to other tasks
   }
 
-  vTaskDelete(NULL);
+  log_d("Reader task exiting.");
+  vTaskDelete(NULL);  // Self-delete the task
 }
 
 void AsyncATHandler::processIncomingData() {
+  // Acquire mutex to safely access _stream and responseBuffer
   if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100)) != pdTRUE) { return; }
 
   while (_stream->available()) {
     char c = static_cast<char>(_stream->read());
-    responseBuffer += c;
 
-    if (responseBuffer.length() >= 2 && responseBuffer.endsWith("\r\n")) {
-      String fullLine = responseBuffer;
-      responseBuffer = "";
-
-      handleResponse(fullLine);
+    // Check for buffer overflow before adding character
+    if (responseBufferPos < AT_RESPONSE_BUFFER_SIZE - 1) {
+      responseBuffer[responseBufferPos++] = c;
+      responseBuffer[responseBufferPos] = '\0';  // Always null-terminate
+    } else {
+      log_w("responseBuffer overflow. Clearing.");
+      memset(responseBuffer, 0, sizeof(responseBuffer));
+      responseBufferPos = 0;
+      // If overflow, discard current character and continue
+      continue;
     }
 
-    if (responseBuffer.length() > AT_RESPONSE_BUFFER_SIZE) {
-      log_w("_responseBuffer overflow. Clearing.");
-      responseBuffer = "";
+    // Check for line termination (\r\n)
+    if (responseBufferPos >= 2 && responseBuffer[responseBufferPos - 2] == '\r' &&
+        responseBuffer[responseBufferPos - 1] == '\n') {
+      // A full line is received. Process it.
+      handleResponse(responseBuffer);
+
+      // Clear the buffer for the next line
+      memset(responseBuffer, 0, sizeof(responseBuffer));
+      responseBufferPos = 0;
     }
   }
-  xSemaphoreGive(mutex);
+  xSemaphoreGive(mutex);  // Release mutex
 }
 
-void AsyncATHandler::handleResponse(const String& response) {
+void AsyncATHandler::handleResponse(const char* response) {
   if (isUnsolicitedResponse(response)) {
-    if (unsolicitedCallback) { unsolicitedCallback(response); }
+    if (unsolicitedCallback) {
+      unsolicitedCallback(response);  // Pass const char* to callback
+    }
     return;
   }
 
+  // Check if there's a pending synchronous command
   if (pendingSyncCommand.active) {
     bool isFinalResponseForCommand = false;
     bool lineRepresentsSuccess = false;
 
     // Logic to determine if this 'response' line completes the pending command.
-    if (response.startsWith("OK\r\n")) {
+    if (strncmp(response, "OK\r\n", 4) == 0) {
       lineRepresentsSuccess = true;
       isFinalResponseForCommand = true;
-    } else if (response.startsWith("ERROR\r\n")) {
+    } else if (strncmp(response, "ERROR\r\n", 7) == 0) {
       lineRepresentsSuccess = false;
       isFinalResponseForCommand = true;
     } else if (
-        pendingSyncCommand.expectedResponse.length() > 0 &&
-        response.indexOf(pendingSyncCommand.expectedResponse) != -1) {
+        strlen(pendingSyncCommand.expectedResponse) > 0 &&
+        strstr(response, pendingSyncCommand.expectedResponse) != nullptr) {
       // This line contains the specific expected response (e.g., "+CGMI: SIMCOM\r\n")
       // This is a data line. It's successful as data.
       lineRepresentsSuccess = true;
@@ -451,14 +524,17 @@ void AsyncATHandler::handleResponse(const String& response) {
 
     ATResponse resp;
     resp.commandId = pendingSyncCommand.id;
-    resp.response = response;
+    strncpy(resp.response, response, AT_COMMAND_MAX_LENGTH - 1);
+    resp.response[AT_COMMAND_MAX_LENGTH - 1] = '\0';  // Ensure null termination
     resp.success = lineRepresentsSuccess;
     resp.timestamp = millis();
 
+    // Send the response to the responseQueue
     if (xQueueSend(responseQueue, &resp, pdMS_TO_TICKS(10)) != pdTRUE) {
-      log_e("Failed to send response toresponseQueue for cmd ID: %lu", resp.commandId);
+      log_e("Failed to send response to responseQueue for cmd ID: %lu", resp.commandId);
     }
 
+    // If this is the final response for the command, signal the semaphore
     if (isFinalResponseForCommand) {
       if (pendingSyncCommand.responseSemaphore) {
         xSemaphoreGive(pendingSyncCommand.responseSemaphore);
@@ -468,16 +544,20 @@ void AsyncATHandler::handleResponse(const String& response) {
       }
       // Clear the pending command state after handling final response
       pendingSyncCommand.active = false;
-      pendingSyncCommand.responseSemaphore = nullptr;
+      pendingSyncCommand.responseSemaphore = nullptr;  // Clear semaphore handle
+      memset(
+          pendingSyncCommand.expectedResponse, 0,
+          sizeof(pendingSyncCommand.expectedResponse));  // Clear expected response
     }
   } else {
-    log_d("Unmatched response (no pending sync command): '%s'", response.c_str());
+    log_d("Unmatched response (no pending sync command): '%s'", response);
   }
 }
 
 // --- isUnsolicitedResponse ---
-bool AsyncATHandler::isUnsolicitedResponse(const String& response) {
-  return response.startsWith("+CMT:") || response.startsWith("+CMTI:") ||
-         response.startsWith("+CLIP:") || response.startsWith("+CREG:") ||
-         response.startsWith("+CPIN:") || response.startsWith("RING");
+bool AsyncATHandler::isUnsolicitedResponse(const char* response) {
+  // Use strncmp for prefix matching
+  return strncmp(response, "+CMT:", 5) == 0 || strncmp(response, "+CMTI:", 6) == 0 ||
+         strncmp(response, "+CLIP:", 6) == 0 || strncmp(response, "+CREG:", 6) == 0 ||
+         strncmp(response, "+CPIN:", 6) == 0 || strncmp(response, "RING", 4) == 0;
 }

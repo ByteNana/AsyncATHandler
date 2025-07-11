@@ -12,10 +12,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '4.0.3'
+
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format cmake g++ make
+          sudo apt-get install -y g++ make
+          sudo pip3 install clang-format
 
       - name: Check code format
         run: make check-format
@@ -41,4 +47,4 @@ jobs:
         pip install platformio
 
     - name: Run PlatformIO
-      run: pio ci -c examples/basic/platformio.ini examples/basic/src/main.cpp --lib="."
+      run: pio ci  examples/basic/src/main.cpp --lib="." --board=esp32dev

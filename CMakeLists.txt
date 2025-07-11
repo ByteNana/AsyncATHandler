@@ -12,7 +12,6 @@ option(NATIVE_BUILD "Use mock Arduino headers for native testing" ON)
 
 # Paths
 set(LIB_SRC_DIR ${CMAKE_SOURCE_DIR}/src)
-set(LIB_INC_DIR ${CMAKE_SOURCE_DIR}/include)
 set(MOCK_INC_DIR ${CMAKE_SOURCE_DIR}/test/mocks)
 set(TEST_DIR      ${CMAKE_SOURCE_DIR}/test)
 
@@ -23,7 +22,6 @@ if(NATIVE_BUILD)
   # Add mock includes
   include_directories(
     ${MOCK_INC_DIR}
-    ${LIB_INC_DIR}
     ${LIB_SRC_DIR}
   )
 
@@ -59,7 +57,6 @@ if(NATIVE_BUILD)
 else()
   message(STATUS "📦 Building for ESP32/Arduino (real headers)")
   include_directories(
-    ${LIB_INC_DIR}
     ${LIB_SRC_DIR}
   )
   add_definitions(-DARDUINO=10800 -DESP32)
@@ -68,7 +65,7 @@ endif()
 # === LIBRARY ===
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
   ${LIB_SRC_DIR}/*.cpp
-  ${LIB_INC_DIR}/*.h
+  ${LIB_SRC_DIR}/*.h
 )
 
 add_library(AsyncATHandler STATIC ${SRC_FILES})

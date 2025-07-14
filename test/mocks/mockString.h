@@ -1,3 +1,7 @@
+#pragma once
+
+#include <string>
+
 class String {
  private:
   std::string data;  // Composition instead of inheritance

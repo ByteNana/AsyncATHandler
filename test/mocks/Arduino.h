@@ -1,16 +1,17 @@
 #pragma once
+
 #include <chrono>
 #include <cstdint>
 #include <cstring>
-#include <string>
 #include <thread>
 
-#include "String.h"
 
 // Arduino type definitions
 typedef bool boolean;
 typedef uint8_t byte;
 typedef uint16_t word;
+
+#include "mockString.h"
 
 // Arduino millis function
 inline unsigned long millis() {

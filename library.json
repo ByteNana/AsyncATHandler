@@ -1,12 +1,12 @@
 {
-  "name": "YourLib",
+  "name": "AsyncATHandler",
   "version": "0.1.0",
-  "description": "My awesome Arduino library",
-  "keywords": ["arduino", "sensor", "example"],
+  "description": "A library for handling AT commands asynchronously with an ESP32.",
+  "keywords": ["arduino", "esp32", "at commands", "asynchronous"],
   "authors": [
     {
-      "name": "Your Name",
-      "email": "your@email.com"
+      "name": "Nathan Almeida",
+      "email": "nathan@bytenana.tech"
     }
   ],
   "frameworks": ["arduino"],

@@ -5,13 +5,12 @@
 #include <cstring>
 #include <thread>
 
-
 // Arduino type definitions
 typedef bool boolean;
 typedef uint8_t byte;
 typedef uint16_t word;
 
-#include "mockString.h"
+#include "WString.h"
 
 // Arduino millis function
 inline unsigned long millis() {

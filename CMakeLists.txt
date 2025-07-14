@@ -74,24 +74,26 @@ add_library(AsyncATHandler STATIC ${SRC_FILES})
 if(NATIVE_BUILD)
   enable_testing()
 
-  file(GLOB_RECURSE TEST_FILES CONFIGURE_DEPENDS
-    ${TEST_DIR}/*.cpp
+  # Get FreeRTOS.cpp from root and all .cpp files from subdirectories
+  file(GLOB_RECURSE FREERTOS_SOURCES CONFIGURE_DEPENDS
+    ${MOCK_INC_DIR}/freertos/FreeRTOS.cpp
+    ${MOCK_INC_DIR}/freertos/*/*.cpp
+  )
+
+  # Only get test files from the TEST_DIR (not recursively from freertos)
+  file(GLOB TEST_FILES CONFIGURE_DEPENDS
+    ${TEST_DIR}/test_native/*.cpp
   )
 
   foreach(TEST_FILE ${TEST_FILES})
     get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
     set(EXEC_NAME "${TEST_NAME}_test_exec")
-
     set(TEST_SRC ${TEST_FILE})
-
-    list(APPEND TEST_SRC ${MOCK_INC_DIR}/freertos/FreeRTOS.cpp)
-
+    list(APPEND TEST_SRC ${FREERTOS_SOURCES})
     add_executable(${EXEC_NAME} ${TEST_SRC})
-
     target_link_libraries(${EXEC_NAME}
       PRIVATE AsyncATHandler gmock gtest gtest_main unity
     )
-
     add_test(NAME ${EXEC_NAME} COMMAND ${EXEC_NAME})
   endforeach()
 endif()

@@ -41,4 +41,4 @@ jobs:
         pip install platformio
 
     - name: Run PlatformIO
-      run: pio ci -c examples/basic/platformio.ini examples/basic/src/main.cpp --lib="."
+      run: pio ci  examples/basic/src/main.cpp --lib="." --board=esp32dev

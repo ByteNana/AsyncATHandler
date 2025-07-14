@@ -36,13 +36,21 @@
 
 // Buffer sizes
 #ifndef AT_RESPONSE_BUFFER_SIZE
-#define AT_RESPONSE_BUFFER_SIZE 256
+#define AT_RESPONSE_BUFFER_SIZE 1024
+#endif
+
+#ifndef AT_COMMAND_MAX_LENGTH
+#define AT_COMMAND_MAX_LENGTH 512
+#endif
+
+#ifndef AT_EXPECTED_RESPONSE_MAX_LENGTH
+#define AT_EXPECTED_RESPONSE_MAX_LENGTH 512
 #endif
 
 struct ATCommand {
   uint32_t id;
-  String command;
-  String expectedResponse;
+  char command[AT_COMMAND_MAX_LENGTH];
+  char expectedResponse[AT_EXPECTED_RESPONSE_MAX_LENGTH];
   uint32_t timeout;
   bool waitForResponse;
   SemaphoreHandle_t responseSemaphore;
@@ -50,7 +58,7 @@ struct ATCommand {
 
 struct ATResponse {
   uint32_t commandId;
-  String response;
+  char response[AT_RESPONSE_BUFFER_SIZE];
   bool success;
   unsigned long timestamp;
 };
@@ -58,8 +66,10 @@ struct ATResponse {
 struct PendingCommandInfo {
   uint32_t id;
   SemaphoreHandle_t responseSemaphore;
-  String expectedResponse;
+  char expectedResponse[AT_EXPECTED_RESPONSE_MAX_LENGTH];
   bool active;
 
-  PendingCommandInfo() : id(0), responseSemaphore(nullptr), expectedResponse(""), active(false) {}
+  PendingCommandInfo() : id(0), responseSemaphore(nullptr), active(false) {
+    memset(expectedResponse, 0, sizeof(expectedResponse));
+  }
 };

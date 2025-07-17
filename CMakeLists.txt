@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15...3.31)
+cmake_minimum_required(VERSION 3.15)
 project(AsyncATHandler CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -11,56 +11,48 @@ set(CMAKE_BUILD_TYPE Debug)
 option(NATIVE_BUILD "Use mock Arduino headers for native testing" ON)
 
 # Paths
-set(LIB_SRC_DIR ${CMAKE_SOURCE_DIR}/src)
-set(MOCK_INC_DIR ${CMAKE_SOURCE_DIR}/test/mocks)
-set(TEST_DIR      ${CMAKE_SOURCE_DIR}/test)
+set(LIB_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(MOCK_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test/mocks)
+set(TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test)
 
 # === NATIVE BUILD MODE ===
-if(NATIVE_BUILD)
-  message(STATUS "🔧 Building with mock Arduino/FreeRTOS headers")
+message(STATUS "🔧 Building with mock Arduino/FreeRTOS headers")
 
-  # Add mock includes
-  include_directories(
-    ${MOCK_INC_DIR}
-    ${LIB_SRC_DIR}
-  )
+# Add mock includes
+include_directories(
+  ${MOCK_INC_DIR}
+  ${LIB_SRC_DIR}
+)
 
-  # === DEPENDENCIES (GMOCK & UNITY) ===
-  include(FetchContent)
-  cmake_policy(SET CMP0135 NEW)
+# === DEPENDENCIES (GMOCK & UNITY) ===
+include(FetchContent)
+cmake_policy(SET CMP0135 NEW)
 
-  # --- GoogleTest/GoogleMock ---
-  FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP true
-  )
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(googletest)
+# --- GoogleTest/GoogleMock ---
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+  DOWNLOAD_EXTRACT_TIMESTAMP true
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
-  # --- Unity ---
-  FetchContent_Declare(
-    Unity
-    URL https://github.com/ThrowTheSwitch/Unity/archive/refs/tags/v2.6.0.zip
-  )
-  FetchContent_MakeAvailable(Unity)
+# --- Unity ---
+FetchContent_Declare(
+  Unity
+  URL https://github.com/ThrowTheSwitch/Unity/archive/refs/tags/v2.6.0.zip
+)
+FetchContent_MakeAvailable(Unity)
 
 
-  # --- Add dependency include directories ---
-  include_directories(
-    ${gmock_SOURCE_DIR}/include
-    ${gtest_SOURCE_DIR}/include
-    ${Unity_SOURCE_DIR}/src
-  )
+# --- Add dependency include directories ---
+include_directories(
+  ${gmock_SOURCE_DIR}/include
+  ${gtest_SOURCE_DIR}/include
+  ${Unity_SOURCE_DIR}/src
+)
 
-else()
-  message(STATUS "📦 Building for ESP32/Arduino (real headers)")
-  include_directories(
-    ${LIB_SRC_DIR}
-  )
-  add_definitions(-DARDUINO=10800 -DESP32)
-endif()
 
 # === LIBRARY ===
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
@@ -90,6 +82,7 @@ if(NATIVE_BUILD)
     set(EXEC_NAME "${TEST_NAME}_test_exec")
     set(TEST_SRC ${TEST_FILE})
     list(APPEND TEST_SRC ${FREERTOS_SOURCES})
+
     add_executable(${EXEC_NAME} ${TEST_SRC})
     target_link_libraries(${EXEC_NAME}
       PRIVATE AsyncATHandler gmock gtest gtest_main unity

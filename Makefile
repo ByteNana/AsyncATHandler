@@ -14,7 +14,7 @@ all: build
 
 setup:
 	@echo "🔧 Running cmake..."
-	cmake -B$(BUILD_DIR) -DNATIVE_BUILD=ON
+	cmake -B$(BUILD_DIR) -DASYNCAT_HANDLER_BUILD_TESTS=ON
 
 build: setup
 	@echo "🔨 Building..."

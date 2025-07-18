@@ -63,7 +63,7 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
 add_library(AsyncATHandler STATIC ${SRC_FILES})
 
 # === TESTS ===
-if(NATIVE_BUILD)
+if(ASYNCAT_HANDLER_BUILD_TESTS)
   enable_testing()
 
   # Get FreeRTOS.cpp from root and all .cpp files from subdirectories

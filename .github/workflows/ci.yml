@@ -43,8 +43,8 @@ jobs:
 
     - name: Setup Python
       run: |
-        apt-get update -y && apt-get install python3-pip -y
+        apt-get update -y && apt-get install python3-pip make -y
         pip install platformio
 
     - name: Run PlatformIO
-      run: pio ci  examples/basic/src/main.cpp --lib="." --board=esp32dev
+      run: make esp32

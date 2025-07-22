@@ -29,6 +29,10 @@ test: build
 	ctest --output-on-failure -j$(shell sysctl -n hw.ncpu 2>/dev/null || nproc) --test-dir build
 
 esp32:
+	@echo "🔨 Building for ESP32..."
+	pio ci  examples/basic/src/main.cpp --lib="." --board=esp32dev
+
+esp32-test: esp32
 	@echo "🚀 Flashing hardware test"
 	pio test -d examples/gsm
 

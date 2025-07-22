@@ -308,6 +308,12 @@ bool AsyncATHandler::sendCommand(
   }
 }
 
+bool AsyncATHandler::sendCommand(
+    const String& command, const String& expectedResponse, uint32_t timeout) {
+  String dummy;
+  return sendCommand(command, dummy, expectedResponse, timeout);
+}
+
 bool AsyncATHandler::sendCommandBatch(
     const String commands[], size_t count, String responses[], uint32_t timeout) {
   bool allSuccess = true;

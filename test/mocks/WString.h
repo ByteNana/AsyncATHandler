@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <type_traits>
 
 class String : public std::string {
  public:
@@ -8,15 +9,17 @@ class String : public std::string {
   String(const char* str) : std::string(str) {}
   String(const std::string& str) : std::string(str) {}
 
+  template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
+  explicit String(T value) : std::string(std::to_string(value)) {}
+
   String& operator=(const char* str) {
     std::string::operator=(str);
     return *this;
   }
 
-  // Added charAt support as requested
   char charAt(int index) const {
     if (index >= 0 && static_cast<size_t>(index) < size()) { return (*this)[index]; }
-    return '\0';  // Arduino String::charAt returns null terminator for out-of-bounds
+    return '\0';
   }
 
   bool startsWith(const String& prefix) const { return find(prefix) == 0; }

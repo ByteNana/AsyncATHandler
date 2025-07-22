@@ -46,6 +46,18 @@ class AsyncATHandler {
       const String &command, String &response, const String &expectedResponse = "OK",
       uint32_t timeout = AT_DEFAULT_TIMEOUT);
 
+  template <typename... Args>
+  bool sendCommand(
+      String &response, const String &expectedResponse = "OK",
+      uint32_t timeout = AT_DEFAULT_TIMEOUT, Args &&...parts) {
+    String cmd;
+    size_t reserveSize = 0;
+    (void)std::initializer_list<int>{(reserveSize += String(parts).length(), 0)...};
+    cmd.reserve(reserveSize);
+    (void)std::initializer_list<int>{(cmd += String(parts), 0)...};
+    return sendCommand(cmd, response, expectedResponse, timeout);
+  }
+
   bool sendCommandBatch(
       const String commands[], size_t count, String responses[] = nullptr,
       uint32_t timeout = AT_DEFAULT_TIMEOUT);

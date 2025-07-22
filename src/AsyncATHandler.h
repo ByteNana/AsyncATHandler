@@ -14,7 +14,6 @@ typedef std::function<void(const char *response)> UnsolicitedCallback;
 
 class AsyncATHandler {
  private:
-  Stream *_stream;
   TaskHandle_t readerTask;
   QueueHandle_t commandQueue;
   QueueHandle_t responseQueue;
@@ -34,6 +33,8 @@ class AsyncATHandler {
   bool isUnsolicitedResponse(const char *response);
 
  public:
+  Stream *_stream;
+
   AsyncATHandler();
   ~AsyncATHandler();
 
@@ -44,6 +45,10 @@ class AsyncATHandler {
 
   bool sendCommand(
       const String &command, String &response, const String &expectedResponse = "OK",
+      uint32_t timeout = AT_DEFAULT_TIMEOUT);
+
+  bool sendCommand(
+      const String &command, const String &expectedResponse = "OK",
       uint32_t timeout = AT_DEFAULT_TIMEOUT);
 
   template <typename... Args>

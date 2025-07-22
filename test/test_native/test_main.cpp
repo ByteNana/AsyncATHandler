@@ -122,6 +122,27 @@ TEST_F(AsyncATHandlerTest, SendSyncCommandWithErrorResponse) {
   log_w("--- Test End: SendSyncCommandWithErrorResponse ---");
 }
 
+TEST_F(AsyncATHandlerTest, SendCommandWithoutResponseParameter) {
+  EXPECT_TRUE(handler->begin(*mockStream));
+  mockStream->ClearTxData();
+
+  std::thread responder([this]() {
+    WaitFor(50);
+    mockStream->InjectRxData("OK\r\n");
+  });
+
+  bool sendResult = handler->sendCommand("AT", "OK", 1000);
+
+  std::string sentData;
+  WaitFor(100);
+  sentData = mockStream->GetTxData();
+
+  EXPECT_TRUE(sendResult);
+  EXPECT_EQ("AT\r\n", sentData);
+
+  responder.join();
+}
+
 TEST_F(AsyncATHandlerTest, VariadicSendCommandHelper) {
   EXPECT_TRUE(handler->begin(*mockStream));
   mockStream->ClearTxData();

@@ -108,6 +108,7 @@ class MockStream : public Stream {
 
 class HardwareSerial : public MockStream {
  public:
+  HardwareSerial(int indexA) {}
   void begin(unsigned long baud) {}
   void println(const String& str) {}
   void print(const String& str) {}

@@ -54,6 +54,33 @@ void test_at_command_error() {
   TEST_ASSERT_FALSE(ok);
   TEST_ASSERT_TRUE(response.indexOf("ERROR") != -1);
 }
+
+void test_gprs_connect_sequence() {
+  mockSerial.mockResponse(
+    "AT+QIDEACT=1\r\nOK\r\n"
+    "AT+QICSGP=1,1,\"internet\",\"user\",\"pass\"\r\nOK\r\n"
+    "AT+QIACT=1\r\nOK\r\n"
+    "AT+CGATT=1\r\nOK\r\n"
+  );
+
+  String response;
+  bool ok = true;
+
+  ok &= handler.sendCommand("AT+QIDEACT=1", response, "OK", 2000);
+  ok &= handler.sendCommand(response, "OK", 5000, "AT+QICSGP=1,1,\"", "internet", "\",\"user\",\"pass\"");
+  ok &= handler.sendCommand("AT+QIACT=1", response, "OK", 150000);
+  ok &= handler.sendCommand("AT+CGATT=1", response, "OK", 60000);
+
+  String expected =
+    "AT+QIDEACT=1\r\n"
+    "AT+QICSGP=1,1,\"internet\",\"user\",\"pass\"\r\n"
+    "AT+QIACT=1\r\n"
+    "AT+CGATT=1\r\n";
+
+  TEST_ASSERT_EQUAL_STRING(expected.c_str(), mockSerial.getSentData().c_str());
+  TEST_ASSERT_TRUE(ok);
+}
+
 void setup() {
   Serial.begin(115200);
   delay(2000);
@@ -65,6 +92,7 @@ void setup() {
   RUN_TEST(test_at_command_success);
   RUN_TEST(test_at_command_timeout);
   RUN_TEST(test_at_command_error);
+  RUN_TEST(test_gprs_connect_sequence);
 
   UNITY_END();
 }

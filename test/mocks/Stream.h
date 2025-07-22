@@ -10,7 +10,11 @@
 #include "Arduino.h"
 
 class Stream {
+protected:
+  unsigned long _startMillis;
+  unsigned long _timeout;
  public:
+  Stream(unsigned long timeout = 1000) : _startMillis(0), _timeout(timeout) {}
   virtual ~Stream() = default;
   virtual int available() = 0;
   virtual int read() = 0;
@@ -18,6 +22,22 @@ class Stream {
   virtual size_t write(const uint8_t* buffer, size_t size) = 0;
   virtual void flush() = 0;
   virtual int peek() = 0;
+  virtual size_t print(int value) { return print(String(value)); }
+  virtual size_t print(uint16_t value) { return print(String(value)); }
+
+  virtual size_t println() { return println(""); }  // Empty line
+  virtual size_t println(int value) { return println(String(value)); }
+
+  // Add timedRead for HttpClient
+  int timedRead() {
+    int c;
+    _startMillis = millis();
+    do {
+      c = read();
+      if (c >= 0) { return c; }
+    } while (millis() - _startMillis < _timeout);
+    return -1;  // -1 indicates timeout
+  }
 
   // These `print` methods are fine, they delegate to `write`.
   size_t print(const String& str) {
@@ -103,11 +123,17 @@ class MockStream : public Stream {
     std::queue<uint8_t> emptyQueue;
     std::swap(txBuffer, emptyQueue);
   }
+  void ClearRxData() {
+    std::lock_guard<std::mutex> lock(rxMutex);
+    std::queue<uint8_t> emptyQueue;
+    std::swap(rxBuffer, emptyQueue);
+  }
   operator bool() const { return true; }
 };
 
 class HardwareSerial : public MockStream {
  public:
+  HardwareSerial(int indexA) {}
   void begin(unsigned long baud) {}
   void println(const String& str) {}
   void print(const String& str) {}

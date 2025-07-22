@@ -1,74 +1,60 @@
 #pragma once
-
-// For actual Arduino/ESP32
 #include <Arduino.h>
 #include <Stream.h>
 
 #include <functional>
+#include <vector>
+#include <memory>
 
-#include "ATHandler.settings.h"  // Includes the updated struct definitions
+#include "ATPromise/ATPromise.h"
+#include "ATResponse/ATResponse.h"
 #include "freertos/FreeRTOS.h"
-
-// Define the UnsolicitedCallback type to accept const char*
-typedef std::function<void(const char *response)> UnsolicitedCallback;
 
 class AsyncATHandler {
  private:
-  Stream *_stream;
-  TaskHandle_t readerTask;
-  QueueHandle_t commandQueue;
-  QueueHandle_t responseQueue;
-  SemaphoreHandle_t mutex;
-  uint32_t nextCommandId;
-  char responseBuffer[AT_RESPONSE_BUFFER_SIZE];
-  size_t responseBufferPos;
-  UnsolicitedCallback unsolicitedCallback;
-  volatile bool running;
+  Stream* stream = nullptr;
+  TaskHandle_t readerTask = nullptr;
+  SemaphoreHandle_t mutex = nullptr;
 
-  PendingCommandInfo pendingSyncCommand;
+  String lineBuffer = "";
+  std::vector<std::unique_ptr<ATPromise>> pendingPromises;
+  URCCallback urcCallback = nullptr;
 
-  // Task function
-  static void readerTaskFunction(void *parameter);
+  uint32_t nextCommandId = 1;
+
+  static void readerTaskFunction(void* parameter);
   void processIncomingData();
-  void handleResponse(const char *response);
-  bool isUnsolicitedResponse(const char *response);
+  void processCompleteLine(const String& line);
+
+  ResponseType classifyLine(const String& line);
+  ATPromise* findPromiseForResponse(const String& line);
+  void handleUnsolicitedResponse(const String& line);
+
+  bool isLineComplete(const String& buffer);
+  void cleanupCompletedPromises();
 
  public:
   AsyncATHandler();
   ~AsyncATHandler();
 
-  bool begin(Stream &stream);
+  bool begin(Stream& stream);
   void end();
 
-  bool sendCommandAsync(const String &command);
-
-  bool sendCommand(
-      const String &command, String &response, const String &expectedResponse = "OK",
-      uint32_t timeout = AT_DEFAULT_TIMEOUT);
+  ATPromise* sendCommand(const String& command);
 
   template <typename... Args>
-  bool sendCommand(
-      String &response, const String &expectedResponse = "OK",
-      uint32_t timeout = AT_DEFAULT_TIMEOUT, Args &&...parts) {
-    String cmd;
-    size_t reserveSize = 0;
-    (void)std::initializer_list<int>{(reserveSize += String(parts).length(), 0)...};
-    cmd.reserve(reserveSize);
-    (void)std::initializer_list<int>{(cmd += String(parts), 0)...};
-    return sendCommand(cmd, response, expectedResponse, timeout);
+  ATPromise* sendCommand(Args... parts) {
+    String command = "";
+    ((command += String(parts)), ...);
+    return sendCommand(command);
   }
 
-  bool sendCommandBatch(
-      const String commands[], size_t count, String responses[] = nullptr,
-      uint32_t timeout = AT_DEFAULT_TIMEOUT);
+  bool sendSync(const String& command, String& response, uint32_t timeout = 5000);
+  bool sendSync(const String& command, uint32_t timeout = 5000);
 
-  void setUnsolicitedCallback(UnsolicitedCallback callback);
+  std::unique_ptr<ATPromise> popCompletedPromise(uint32_t commandId);
 
-  bool hasResponse();
-  ATResponse getResponse();
+  void onURC(URCCallback callback) { urcCallback = callback; }
 
-  void flushResponseQueue();
-  size_t getQueuedCommandCount();
-  size_t getQueuedResponseCount();
-  bool isRunning() const { return running; }
+  Stream* getStream() { return stream; }
 };

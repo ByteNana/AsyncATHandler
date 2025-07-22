@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <Stream.h>
+
 #include <vector>
 
 class HardwareMockStream : public Stream {

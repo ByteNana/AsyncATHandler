@@ -9,7 +9,7 @@
 using ::testing::NiceMock;
 
 class SequenceTest : public ::testing::Test {
-protected:
+ protected:
   AsyncATHandler handler;
   NiceMock<MockStream> *mockStream;
 
@@ -26,10 +26,10 @@ protected:
 
 TEST_F(SequenceTest, GPRSConnectSequence) {
   std::string responses =
-    "AT+QIDEACT=1\r\nOK\r\n"
-    "AT+QICSGP=1,1,\"internet\",\"user\",\"pass\"\r\nOK\r\n"
-    "AT+QIACT=1\r\nOK\r\n"
-    "AT+CGATT=1\r\nOK\r\n";
+      "AT+QIDEACT=1\r\nOK\r\n"
+      "AT+QICSGP=1,1,\"internet\",\"user\",\"pass\"\r\nOK\r\n"
+      "AT+QIACT=1\r\nOK\r\n"
+      "AT+CGATT=1\r\nOK\r\n";
   mockStream->InjectRxData(responses.c_str());
 
   bool ok;
@@ -44,4 +44,3 @@ TEST_F(SequenceTest, GPRSConnectSequence) {
   ok = handler.sendCommand("AT+CGATT=1", resp, "OK", 1000);
   EXPECT_TRUE(ok);
 }
-

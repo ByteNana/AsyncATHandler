@@ -34,7 +34,7 @@ esp32:
 
 esp32-test: esp32
 	@echo "🚀 Flashing hardware test"
-	pio test -d examples/gsm
+	pio test -d examples/basic
 
 clean:
 	@echo "🧹 Cleaning up..."

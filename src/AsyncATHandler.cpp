@@ -465,6 +465,15 @@ void AsyncATHandler::processIncomingData() {
   // Acquire mutex to safely access _stream and responseBuffer
   if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100)) != pdTRUE) { return; }
 
+  // Don't consume data if there is no pending command and no unsolicited
+  // callback. This avoids reading responses that belong to the next command
+  // before it is queued, which can happen in tests where responses for
+  // multiple commands are preloaded.
+  if (!pendingSyncCommand.active && !unsolicitedCallback) {
+    xSemaphoreGive(mutex);
+    return;
+  }
+
   while (_stream->available()) {
     char c = static_cast<char>(_stream->read());
 
@@ -489,15 +498,34 @@ void AsyncATHandler::processIncomingData() {
       // Clear the buffer for the next line
       memset(responseBuffer, 0, sizeof(responseBuffer));
       responseBufferPos = 0;
+
+      // If handling this line cleared the pending command, stop reading
+      // further data to avoid consuming responses that belong to the next
+      // command before it is queued.
+      if (!pendingSyncCommand.active) {
+        break;
+      }
     }
   }
   xSemaphoreGive(mutex);  // Release mutex
 }
 
 void AsyncATHandler::handleResponse(const char* response) {
-  if (isUnsolicitedResponse(response)) {
+  // Trim trailing/leading whitespace to handle modems that send extra spaces or
+  // CR characters. Using String here is fine since response lines are short
+  // (\r\n-terminated).
+  String line(response);
+  line.trim();
+  if (line.length() == 0) {
+    // Ignore blank lines entirely
+    return;
+  }
+
+  const char* trimmed = line.c_str();
+
+  if (isUnsolicitedResponse(trimmed)) {
     if (unsolicitedCallback) {
-      unsolicitedCallback(response);  // Pass const char* to callback
+      unsolicitedCallback(trimmed);  // Pass const char* to callback
     }
     return;
   }
@@ -508,15 +536,15 @@ void AsyncATHandler::handleResponse(const char* response) {
     bool lineRepresentsSuccess = false;
 
     // Logic to determine if this 'response' line completes the pending command.
-    if (strncmp(response, "OK\r\n", 4) == 0) {
+    if (strcmp(trimmed, "OK") == 0) {
       lineRepresentsSuccess = true;
       isFinalResponseForCommand = true;
-    } else if (strncmp(response, "ERROR\r\n", 7) == 0) {
+    } else if (strcmp(trimmed, "ERROR") == 0) {
       lineRepresentsSuccess = false;
       isFinalResponseForCommand = true;
     } else if (
         strlen(pendingSyncCommand.expectedResponse) > 0 &&
-        strstr(response, pendingSyncCommand.expectedResponse) != nullptr) {
+        strstr(trimmed, pendingSyncCommand.expectedResponse) != nullptr) {
       // This line contains the specific expected response (e.g., "+CGMI: SIMCOM\r\n")
       // This is a data line. It's successful as data.
       lineRepresentsSuccess = true;
@@ -556,7 +584,7 @@ void AsyncATHandler::handleResponse(const char* response) {
           sizeof(pendingSyncCommand.expectedResponse));  // Clear expected response
     }
   } else {
-    log_d("Unmatched response (no pending sync command): '%s'", response);
+    log_d("Unmatched response (no pending sync command): '%s'", trimmed);
   }
 }
 

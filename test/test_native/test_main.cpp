@@ -75,8 +75,8 @@ TEST_F(AsyncATHandlerTest, SendSyncCommandWithOKResponse) {
 
   std::thread responder([this]() {
     WaitFor(50);  // Give AsyncATHandler time to send command
-    log_i("[Responder Thread] Injecting OK\\r\\n");
-    mockStream->InjectRxData("OK\r\n");
+    log_i("[Responder Thread] Injecting OK with whitespace");
+    mockStream->InjectRxData("OK \r\n");
   });
 
   String response;
@@ -84,8 +84,8 @@ TEST_F(AsyncATHandlerTest, SendSyncCommandWithOKResponse) {
   log_i("[Main Test Thread] sendCommand returned: %s", sendResult ? "TRUE" : "FALSE");
   log_i("[Main Test Thread] Received response: '%s'", response.c_str());
 
-  EXPECT_TRUE(sendResult);        // Should now pass if response logic is correct
-  EXPECT_EQ("OK\r\n", response);  // <<< FIX: Expect the full line ending
+  EXPECT_TRUE(sendResult);  // Should succeed even with trailing whitespace
+  EXPECT_EQ("OK \r\n", response);
 
   responder.join();
   log_w("--- Test End: SendSyncCommandWithOKResponse ---");

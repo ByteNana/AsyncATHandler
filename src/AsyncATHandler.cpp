@@ -252,10 +252,13 @@ bool AsyncATHandler::sendCommand(
           fullCollectedResponse += charArrayToString(receivedResp.response);
 
           // Determine if this is the final response based on content
-          if (strncmp(receivedResp.response, "OK\r\n", 4) == 0) {
+          String line(receivedResp.response);
+          line.trim();
+
+          if (line == "OK") {
             overallSuccess = true;
             finalResponseReceived = true;
-          } else if (strncmp(receivedResp.response, "ERROR\r\n", 7) == 0) {
+          } else if (line == "ERROR") {
             overallSuccess = false;
             finalResponseReceived = true;
           }
@@ -502,9 +505,7 @@ void AsyncATHandler::processIncomingData() {
       // If handling this line cleared the pending command, stop reading
       // further data to avoid consuming responses that belong to the next
       // command before it is queued.
-      if (!pendingSyncCommand.active) {
-        break;
-      }
+      if (!pendingSyncCommand.active) { break; }
     }
   }
   xSemaphoreGive(mutex);  // Release mutex
@@ -536,10 +537,13 @@ void AsyncATHandler::handleResponse(const char* response) {
     bool lineRepresentsSuccess = false;
 
     // Logic to determine if this 'response' line completes the pending command.
-    if (strcmp(trimmed, "OK") == 0) {
+    String line(response);
+    line.trim();
+
+    if (line == "OK") {
       lineRepresentsSuccess = true;
       isFinalResponseForCommand = true;
-    } else if (strcmp(trimmed, "ERROR") == 0) {
+    } else if (line == "ERROR") {
       lineRepresentsSuccess = false;
       isFinalResponseForCommand = true;
     } else if (

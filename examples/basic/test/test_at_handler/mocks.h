@@ -18,9 +18,7 @@ class HardwareMockStream : public Stream {
   String getSentData() { return _txBuffer; }
   void clearSentData() { _txBuffer = ""; }
 
-  virtual int available() override {
-    return _rxBuffer.length() - _rxReadIndex;
-  }
+  virtual int available() override { return _rxBuffer.length() - _rxReadIndex; }
 
   virtual int read() override {
     if (_rxReadIndex < _rxBuffer.length()) { return _rxBuffer.charAt(_rxReadIndex++); }

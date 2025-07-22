@@ -256,3 +256,24 @@ TEST_F(AsyncATHandlerTest, CleanShutdown) {
   log_w("--- Test End: CleanShutdown ---");
   WaitFor(100);  // Give time for the task to clean up
 }
+
+TEST_F(AsyncATHandlerTest, LongResponseNotTruncated) {
+  EXPECT_TRUE(handler->begin(*mockStream));
+
+  // Generate a response line longer than AT_COMMAND_MAX_LENGTH (512) but
+  // less than AT_RESPONSE_BUFFER_SIZE (1024).
+  std::string longLine(600, 'A');
+  std::string injected = longLine + "\r\nOK\r\n";
+
+  std::thread responder([&]() {
+    WaitFor(50);
+    mockStream->InjectRxData(injected);
+  });
+
+  String response;
+  bool result = handler->sendCommand("AT+LONG", response);
+  responder.join();
+
+  EXPECT_TRUE(result);
+  EXPECT_EQ(String(longLine.c_str()) + "\r\nOK\r\n", response);
+}

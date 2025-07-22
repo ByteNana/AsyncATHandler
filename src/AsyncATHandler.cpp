@@ -524,8 +524,8 @@ void AsyncATHandler::handleResponse(const char* response) {
 
     ATResponse resp;
     resp.commandId = pendingSyncCommand.id;
-    strncpy(resp.response, response, AT_COMMAND_MAX_LENGTH - 1);
-    resp.response[AT_COMMAND_MAX_LENGTH - 1] = '\0';  // Ensure null termination
+    strncpy(resp.response, response, AT_RESPONSE_BUFFER_SIZE - 1);
+    resp.response[AT_RESPONSE_BUFFER_SIZE - 1] = '\0';  // Ensure null termination
     resp.success = lineRepresentsSuccess;
     resp.timestamp = millis();
 

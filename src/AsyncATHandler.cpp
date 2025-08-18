@@ -331,6 +331,26 @@ bool AsyncATHandler::sendCommandBatch(
   return allSuccess;
 }
 
+int AsyncATHandler::waitResponse(
+    const String& expectedResponse, String& response, uint32_t timeout) {
+  uint32_t startMillis = millis();
+  String collectedResponse = "";
+  while (millis() - startMillis < timeout) {
+    ATResponse resp;
+    if (xQueueReceive(responseQueue, &resp, pdMS_TO_TICKS(100)) == pdTRUE) {
+      String line(resp.response);
+      line.trim();
+      collectedResponse += line + "\n";
+      if (line.indexOf(expectedResponse) != -1) {
+        response = collectedResponse;
+        return 1;
+      }
+    }
+  }
+  response = collectedResponse;
+  return 0;
+}
+
 void AsyncATHandler::setUnsolicitedCallback(UnsolicitedCallback callback) {
   // Check if mutex exists before taking it
   if (mutex && xSemaphoreTake(mutex, portMAX_DELAY) == pdTRUE) {
@@ -589,6 +609,18 @@ void AsyncATHandler::handleResponse(const char* response) {
     }
   } else {
     log_d("Unmatched response (no pending sync command): '%s'", trimmed);
+
+    ATResponse resp;
+    resp.commandId = 0;  // Neutral ID for unmatched responses
+    strncpy(resp.response, trimmed, AT_RESPONSE_BUFFER_SIZE - 1);
+    resp.response[AT_RESPONSE_BUFFER_SIZE - 1] = '\0';
+    resp.success = false;
+    resp.timestamp = millis();
+
+    // Enqueue the unmatched response
+    if (xQueueSend(responseQueue, &resp, pdMS_TO_TICKS(10)) != pdTRUE) {
+      log_e("Failed to enqueue unmatched response to responseQueue");
+    }
   }
 }
 

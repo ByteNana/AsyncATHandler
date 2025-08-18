@@ -67,6 +67,10 @@ class AsyncATHandler {
       const String commands[], size_t count, String responses[] = nullptr,
       uint32_t timeout = AT_DEFAULT_TIMEOUT);
 
+  int waitResponse(
+      const String &expectedResponse, String &response, uint32_t timeout = AT_DEFAULT_TIMEOUT);
+  ;
+
   void setUnsolicitedCallback(UnsolicitedCallback callback);
 
   bool hasResponse();

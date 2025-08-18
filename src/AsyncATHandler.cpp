@@ -233,8 +233,6 @@ bool AsyncATHandler::sendCommand(
 
   if (semaphoreTaken == pdTRUE) {
     String fullCollectedResponse = "";
-    bool finalResponseReceived = false;
-    bool overallSuccess = false;
 
     // Acquire mutex to safely access responseQueue
     xSemaphoreTake(mutex, pdMS_TO_TICKS(AT_QUEUE_TIMEOUT));
@@ -242,7 +240,6 @@ bool AsyncATHandler::sendCommand(
     // Iterate through responses in the queue that belong to this command ID
     // We might need to receive more than initialQueueSize if the reader task
     // puts more responses in while we are processing.
-    // The '+ 5' is a heuristic, better to check for finalResponseReceived.
     size_t initialQueueSize = uxQueueMessagesWaiting(responseQueue);
     for (size_t i = 0; i < initialQueueSize + AT_RESPONSE_QUEUE_SIZE; ++i) {
       ATResponse receivedResp;
@@ -250,18 +247,6 @@ bool AsyncATHandler::sendCommand(
       if (xQueueReceive(responseQueue, &receivedResp, 0) == pdTRUE) {
         if (receivedResp.commandId == cmd.id) {
           fullCollectedResponse += charArrayToString(receivedResp.response);
-
-          // Determine if this is the final response based on content
-          String line(receivedResp.response);
-          line.trim();
-
-          if (line == "OK") {
-            overallSuccess = true;
-            finalResponseReceived = true;
-          } else if (line == "ERROR") {
-            overallSuccess = false;
-            finalResponseReceived = true;
-          }
         } else {
           // Not our response, put it back.
           // This is still a tricky part. If the queue is full, it won't go back.
@@ -273,38 +258,26 @@ bool AsyncATHandler::sendCommand(
         }
       } else {
         // No more items currently in queue.
-        if (!finalResponseReceived) {
-          log_d("No more items in queue for ID: %lu. Breaking collection.", cmd.id);
-        }
+        log_d("No more items in queue for ID: %lu. Breaking collection.", cmd.id);
         break;  // Exit loop if no more responses are immediately available
-      }
-      if (finalResponseReceived) {
-        log_d("Final response received for ID: %lu. Breaking collection.", cmd.id);
-        break;  // Exit loop once final response is found
       }
     }
     xSemaphoreGive(mutex);  // Release mutex
 
     response = fullCollectedResponse;  // Assign collected response to output parameter
 
-    // Additional check for specific expected response if it's not "OK"
-    if (overallSuccess && strlen(cmd.expectedResponse) > 0 &&
-        strncmp(cmd.expectedResponse, "OK", 2) != 0 &&
-        strstr(fullCollectedResponse.c_str(), cmd.expectedResponse) == nullptr) {
-      overallSuccess = false;  // Specific expected response not found
+    bool success = false;
+    if (strlen(cmd.expectedResponse) == 0) {
+      success = true;
+    } else if (strstr(fullCollectedResponse.c_str(), cmd.expectedResponse) != nullptr) {
+      success = true;
+    } else {
       log_w(
-          "Specific expected response '%s' not found in '%s' for cmd ID: %lu", cmd.expectedResponse,
+          "Expected response '%s' not found in '%s' for cmd ID: %lu", cmd.expectedResponse,
           fullCollectedResponse.c_str(), cmd.id);
     }
 
-    if (!finalResponseReceived) {
-      overallSuccess = false;
-      log_e(
-          "Command ID %lu ended without final OK/ERROR response. Collected: '%s'", cmd.id,
-          fullCollectedResponse.c_str());
-    }
-
-    return overallSuccess;
+    return success;
   } else {
     log_e("Timeout waiting for semaphore for cmd ID: %lu", cmd.id);
     return false;
@@ -329,6 +302,26 @@ bool AsyncATHandler::sendCommandBatch(
     if (!success) { allSuccess = false; }
   }
   return allSuccess;
+}
+
+int AsyncATHandler::waitResponse(
+    const String& expectedResponse, String& response, uint32_t timeout) {
+  uint32_t startMillis = millis();
+  String collectedResponse = "";
+  while (millis() - startMillis < timeout) {
+    ATResponse resp;
+    if (xQueueReceive(responseQueue, &resp, pdMS_TO_TICKS(100)) == pdTRUE) {
+      String line(resp.response);
+      line.trim();
+      collectedResponse += line + "\n";
+      if (line.indexOf(expectedResponse) != -1) {
+        response = collectedResponse;
+        return 1;
+      }
+    }
+  }
+  response = collectedResponse;
+  return 0;
 }
 
 void AsyncATHandler::setUnsolicitedCallback(UnsolicitedCallback callback) {
@@ -468,15 +461,6 @@ void AsyncATHandler::processIncomingData() {
   // Acquire mutex to safely access _stream and responseBuffer
   if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100)) != pdTRUE) { return; }
 
-  // Don't consume data if there is no pending command and no unsolicited
-  // callback. This avoids reading responses that belong to the next command
-  // before it is queued, which can happen in tests where responses for
-  // multiple commands are preloaded.
-  if (!pendingSyncCommand.active && !unsolicitedCallback) {
-    xSemaphoreGive(mutex);
-    return;
-  }
-
   while (_stream->available()) {
     char c = static_cast<char>(_stream->read());
 
@@ -536,28 +520,10 @@ void AsyncATHandler::handleResponse(const char* response) {
     bool isFinalResponseForCommand = false;
     bool lineRepresentsSuccess = false;
 
-    // Logic to determine if this 'response' line completes the pending command.
-    String line(response);
-    line.trim();
-
-    if (line == "OK") {
-      lineRepresentsSuccess = true;
-      isFinalResponseForCommand = true;
-    } else if (line == "ERROR") {
-      lineRepresentsSuccess = false;
-      isFinalResponseForCommand = true;
-    } else if (
-        strlen(pendingSyncCommand.expectedResponse) > 0 &&
+    if (strlen(pendingSyncCommand.expectedResponse) > 0 &&
         strstr(trimmed, pendingSyncCommand.expectedResponse) != nullptr) {
-      // This line contains the specific expected response (e.g., "+CGMI: SIMCOM\r\n")
-      // This is a data line. It's successful as data.
       lineRepresentsSuccess = true;
-      isFinalResponseForCommand = false;  // It's a data line, usually not the final OK/ERROR
-    } else {
-      // For any other lines that don't start with OK/ERROR and don't contain specific expected
-      // response. These might be echoes or unexpected lines. We'll mark their success as false.
-      lineRepresentsSuccess = false;
-      isFinalResponseForCommand = false;
+      isFinalResponseForCommand = true;
     }
 
     ATResponse resp;
@@ -589,6 +555,18 @@ void AsyncATHandler::handleResponse(const char* response) {
     }
   } else {
     log_d("Unmatched response (no pending sync command): '%s'", trimmed);
+
+    ATResponse resp;
+    resp.commandId = 0;  // Neutral ID for unmatched responses
+    strncpy(resp.response, trimmed, AT_RESPONSE_BUFFER_SIZE - 1);
+    resp.response[AT_RESPONSE_BUFFER_SIZE - 1] = '\0';
+    resp.success = false;
+    resp.timestamp = millis();
+
+    // Enqueue the unmatched response
+    if (xQueueSend(responseQueue, &resp, pdMS_TO_TICKS(10)) != pdTRUE) {
+      log_e("Failed to enqueue unmatched response to responseQueue");
+    }
   }
 }
 

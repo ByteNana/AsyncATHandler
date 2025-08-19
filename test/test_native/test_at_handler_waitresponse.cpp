@@ -120,167 +120,167 @@ TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseTimeout) {
   EXPECT_TRUE(testResult);
 }
 
-// TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseMultipleExpected) {
-//   bool testResult = runInFreeRTOSTask([this]() {
-//     if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
-//
-//     // Inject various responses
-//     mockStream->InjectRxData("+CREG: 0,1\r\n");
-//     mockStream->InjectRxData("+QIRD: 1024,data_here\r\n");
-//     mockStream->InjectRxData("OK\r\n");
-//
-//     // Wait for specific responses - should find +QIRD: first
-//     int8_t result = handler->waitResponse("+QIRD:", "OK", "ERROR");
-//
-//     if (result != 1) {
-//       throw std::runtime_error("Should have found +QIRD: as first match (index 1)");
-//     }
-//
-//     log_i("[Test] Found +QIRD: as expected (result: %d)", result);
-//   }, "MultipleExpectedTest");
-//
-//   EXPECT_TRUE(testResult);
-// }
+TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseMultipleExpected) {
+  bool testResult = runInFreeRTOSTask([this]() {
+    if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-// TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseMultipleExpectedSecondMatch) {
-//   bool testResult = runInFreeRTOSTask([this]() {
-//     if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
-//
-//     // Inject responses that will match the second expected response
-//     mockStream->InjectRxData("+CREG: 0,1\r\n");
-//     mockStream->InjectRxData("OK\r\n");  // This should match second position
-//
-//     // Wait for responses - should find OK as second match
-//     int8_t result = handler->waitResponse("+QIRD:", "OK", "ERROR");
-//
-//     if (result != 2) {
-//       throw std::runtime_error("Should have found OK as second match (index 2)");
-//     }
-//
-//     log_i("[Test] Found OK as expected (result: %d)", result);
-//   }, "SecondMatchTest");
-//
-//   EXPECT_TRUE(testResult);
-// }
+    // Inject various responses
+    mockStream->InjectRxData("+CREG: 0,1\r\n");
+    mockStream->InjectRxData("+QIRD: 1024,data_here\r\n");
+    mockStream->InjectRxData("OK\r\n");
 
-// TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseMultipleExpectedError) {
-//   bool testResult = runInFreeRTOSTask([this]() {
-//     if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
-//
-//     // Inject responses that will match the third expected response
-//     mockStream->InjectRxData("+CREG: 0,1\r\n");
-//     mockStream->InjectRxData("ERROR\r\n");  // This should match third position
-//
-//     // Wait for responses - should find ERROR as third match
-//     int8_t result = handler->waitResponse("+QIRD:", "OK", "ERROR");
-//
-//     if (result != 3) {
-//       throw std::runtime_error("Should have found ERROR as third match (index 3)");
-//     }
-//
-//     log_i("[Test] Found ERROR as expected (result: %d)", result);
-//   }, "ThirdMatchTest");
-//
-//   EXPECT_TRUE(testResult);
-// }
+    // Wait for specific responses - should find +QIRD: first
+    int8_t result = handler->waitResponse("+QIRD:", "OK", "ERROR");
 
-// TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseCustomTimeout) {
-//   bool testResult = runInFreeRTOSTask([this]() {
-//     if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
-//
-//     // Start a separate task to inject the response after delay
-//     struct ResponderData {
-//       AsyncATHandlerWaitResponseTest* test;
-//       std::atomic<bool> complete{false};
-//     } responderData = {this, {false}};
-//
-//     auto responderTask = [](void* pvParameters) {
-//       auto* data = static_cast<ResponderData*>(pvParameters);
-//       vTaskDelay(pdMS_TO_TICKS(150));  // Delay before injection
-//       log_i("[Responder Task] Injecting +QISTATE response");
-//       data->test->mockStream->InjectRxData("+QISTATE: 0,\"TCP\",\"192.168.1.1\"\r\n");
-//       data->complete = true;
-//       vTaskDelete(nullptr);
-//     };
-//
-//     TaskHandle_t responderHandle = nullptr;
-//     xTaskCreate(
-//         responderTask, "ResponderTask", configMINIMAL_STACK_SIZE * 2, &responderData, 1,
-//         &responderHandle);
-//
-//     // Wait with custom timeout - this runs concurrently with responder task
-//     int8_t result = handler->waitResponse(500, "+QISTATE:", "OK", "ERROR");
-//
-//     // Wait for responder to complete
-//     while (!responderData.complete.load()) { vTaskDelay(pdMS_TO_TICKS(10)); }
-//
-//     if (result != 1) {
-//       throw std::runtime_error("Should have found +QISTATE: with custom timeout");
-//     }
-//
-//     log_i("[Test] Found +QISTATE: with custom timeout");
-//   }, "CustomTimeoutTest", configMINIMAL_STACK_SIZE * 4);
-//
-//   EXPECT_TRUE(testResult);
-// }
+    if (result != 1) {
+      throw std::runtime_error("Should have found +QIRD: as first match (index 1)");
+    }
 
-// TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseContainsMatching) {
-//   bool testResult = runInFreeRTOSTask([this]() {
-//     if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
-//
-//     // Inject a response that CONTAINS the expected string
-//     mockStream->InjectRxData("+QIRD: 1024,some_long_data_payload_here\r\n");
-//
-//     // Wait for partial match - should find it using contains logic
-//     int8_t result = handler->waitResponse("+QIRD:");
-//
-//     if (result != 1) {
-//       throw std::runtime_error("Should have found +QIRD: using contains matching");
-//     }
-//
-//     log_i("[Test] Found +QIRD: using contains logic");
-//   }, "ContainsMatchTest");
-//
-//   EXPECT_TRUE(testResult);
-// }
+    log_i("[Test] Found +QIRD: as expected (result: %d)", result);
+  }, "MultipleExpectedTest");
 
-// TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseSingleExpectedUsage) {
-//   bool testResult = runInFreeRTOSTask([this]() {
-//     if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
-//
-//     // Inject the expected response
-//     mockStream->InjectRxData("+QISTATE: 0,\"TCP\",\"connected\"\r\n");
-//
-//     // Test the specific pattern: if (waitResponse("+QISTATE:") != 1)
-//     if (handler->waitResponse("+QISTATE:") != 1) {
-//       throw std::runtime_error("waitResponse should return 1 when +QISTATE: found");
-//     }
-//
-//     log_i("[Test] Single expected response usage works correctly");
-//   }, "SingleExpectedTest");
-//
-//   EXPECT_TRUE(testResult);
-// }
+  EXPECT_TRUE(testResult);
+}
 
-// TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseMultipleTimeout) {
-//   bool testResult = runInFreeRTOSTask([this]() {
-//     if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
-//
-//     // Inject responses that don't match any expected
-//     mockStream->InjectRxData("+CNEG: 0,1\r\n");
-//     mockStream->InjectRxData("+CNQ: 15,99\r\n");
-//
-//     // Wait for responses that won't be found
-//     int8_t result = handler->waitResponse(300, "+QIRD:", "CONNECT", "+CME ERROR:");
-//
-//     if (result != -1) {
-//       throw std::runtime_error("Should have timed out when no expected responses found");
-//     }
-//
-//     log_i("[Test] Multiple expected timeout works correctly");
-//   }, "MultipleTimeoutTest");
-//
-//   EXPECT_TRUE(testResult);
-// }
+TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseMultipleExpectedSecondMatch) {
+  bool testResult = runInFreeRTOSTask([this]() {
+    if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+
+    // Inject responses that will match the second expected response
+    mockStream->InjectRxData("+CREG: 0,1\r\n");
+    mockStream->InjectRxData("OK\r\n");  // This should match second position
+
+    // Wait for responses - should find OK as second match
+    int8_t result = handler->waitResponse("+QIRD:", "OK", "ERROR");
+
+    if (result != 2) {
+      throw std::runtime_error("Should have found OK as second match (index 2)");
+    }
+
+    log_i("[Test] Found OK as expected (result: %d)", result);
+  }, "SecondMatchTest");
+
+  EXPECT_TRUE(testResult);
+}
+
+TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseMultipleExpectedError) {
+  bool testResult = runInFreeRTOSTask([this]() {
+    if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+
+    // Inject responses that will match the third expected response
+    mockStream->InjectRxData("+CREG: 0,1\r\n");
+    mockStream->InjectRxData("ERROR\r\n");  // This should match third position
+
+    // Wait for responses - should find ERROR as third match
+    int8_t result = handler->waitResponse("+QIRD:", "OK", "ERROR");
+
+    if (result != 3) {
+      throw std::runtime_error("Should have found ERROR as third match (index 3)");
+    }
+
+    log_i("[Test] Found ERROR as expected (result: %d)", result);
+  }, "ThirdMatchTest");
+
+  EXPECT_TRUE(testResult);
+}
+
+TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseCustomTimeout) {
+  bool testResult = runInFreeRTOSTask([this]() {
+    if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+
+    // Start a separate task to inject the response after delay
+    struct ResponderData {
+      AsyncATHandlerWaitResponseTest* test;
+      std::atomic<bool> complete{false};
+    } responderData = {this, {false}};
+
+    auto responderTask = [](void* pvParameters) {
+      auto* data = static_cast<ResponderData*>(pvParameters);
+      vTaskDelay(pdMS_TO_TICKS(150));  // Delay before injection
+      log_i("[Responder Task] Injecting +QISTATE response");
+      data->test->mockStream->InjectRxData("+QISTATE: 0,\"TCP\",\"192.168.1.1\"\r\n");
+      data->complete = true;
+      vTaskDelete(nullptr);
+    };
+
+    TaskHandle_t responderHandle = nullptr;
+    xTaskCreate(
+        responderTask, "ResponderTask", configMINIMAL_STACK_SIZE * 2, &responderData, 1,
+        &responderHandle);
+
+    // Wait with custom timeout - this runs concurrently with responder task
+    int8_t result = handler->waitResponse(500, "+QISTATE:", "OK", "ERROR");
+
+    // Wait for responder to complete
+    while (!responderData.complete.load()) { vTaskDelay(pdMS_TO_TICKS(10)); }
+
+    if (result != 1) {
+      throw std::runtime_error("Should have found +QISTATE: with custom timeout");
+    }
+
+    log_i("[Test] Found +QISTATE: with custom timeout");
+  }, "CustomTimeoutTest", configMINIMAL_STACK_SIZE * 4);
+
+  EXPECT_TRUE(testResult);
+}
+
+TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseContainsMatching) {
+  bool testResult = runInFreeRTOSTask([this]() {
+    if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+
+    // Inject a response that CONTAINS the expected string
+    mockStream->InjectRxData("+QIRD: 1024,some_long_data_payload_here\r\n");
+
+    // Wait for partial match - should find it using contains logic
+    int8_t result = handler->waitResponse("+QIRD:");
+
+    if (result != 1) {
+      throw std::runtime_error("Should have found +QIRD: using contains matching");
+    }
+
+    log_i("[Test] Found +QIRD: using contains logic");
+  }, "ContainsMatchTest");
+
+  EXPECT_TRUE(testResult);
+}
+
+TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseSingleExpectedUsage) {
+  bool testResult = runInFreeRTOSTask([this]() {
+    if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+
+    // Inject the expected response
+    mockStream->InjectRxData("+QISTATE: 0,\"TCP\",\"connected\"\r\n");
+
+    // Test the specific pattern: if (waitResponse("+QISTATE:") != 1)
+    if (handler->waitResponse("+QISTATE:") != 1) {
+      throw std::runtime_error("waitResponse should return 1 when +QISTATE: found");
+    }
+
+    log_i("[Test] Single expected response usage works correctly");
+  }, "SingleExpectedTest");
+
+  EXPECT_TRUE(testResult);
+}
+
+TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseMultipleTimeout) {
+  bool testResult = runInFreeRTOSTask([this]() {
+    if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+
+    // Inject responses that don't match any expected
+    mockStream->InjectRxData("+CNEG: 0,1\r\n");
+    mockStream->InjectRxData("+CNQ: 15,99\r\n");
+
+    // Wait for responses that won't be found
+    int8_t result = handler->waitResponse(300, "+QIRD:", "CONNECT", "+CME ERROR:");
+
+    if (result != 0) {
+      throw std::runtime_error("Should have timed out when no expected responses found");
+    }
+
+    log_i("[Test] Multiple expected timeout works correctly");
+  }, "MultipleTimeoutTest");
+
+  EXPECT_TRUE(testResult);
+}
 
 FREERTOS_TEST_MAIN()

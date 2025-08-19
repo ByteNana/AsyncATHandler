@@ -68,9 +68,6 @@ class AsyncATHandlerWaitResponseComprehensiveTest : public FreeRTOSTest {
   AsyncATHandler* handler;
 };
 
-// =============================================================================
-// Test 1: waitResponse() - Default timeout, any response
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_DefaultTimeout_AnyResponse) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -89,9 +86,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_DefaultTimeout_
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 2: waitResponse(timeout) - Custom timeout, any response
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_CustomTimeout_AnyResponse) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -112,9 +106,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_CustomTimeout_A
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 3: waitResponse(expectedResponse) - Single expected, default timeout
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_SingleExpected_DefaultTimeout) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -133,9 +124,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_SingleExpected_
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 4: waitResponse("expected1", "expected2") - Multiple expected, default timeout
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MultipleExpected_DefaultTimeout) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -156,9 +144,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MultipleExpecte
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 5: waitResponse(timeout, "expected1", "expected2") - Multiple expected, custom timeout
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MultipleExpected_CustomTimeout) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -179,9 +164,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MultipleExpecte
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 6: waitResponse with String objects
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_StringObjects) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -206,9 +188,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_StringObjects) 
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 7: waitResponse with mixed types (const char* and String)
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MixedTypes) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -232,9 +211,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MixedTypes) {
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 8: waitResponse timeout scenarios
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_TimeoutScenarios) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -265,9 +241,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_TimeoutScenario
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 9: waitResponse with many expected responses (stress test)
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_ManyExpectedResponses) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -290,9 +263,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_ManyExpectedRes
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 10: waitResponse with partial matches and contains logic
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_PartialMatches) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
@@ -315,9 +285,6 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_PartialMatches)
   EXPECT_TRUE(testResult);
 }
 
-// =============================================================================
-// Test 11: waitResponse with the old signature (expectedResponse, response, timeout)
-// =============================================================================
 TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_OldSignature) {
   bool testResult = runInFreeRTOSTask(
       [this]() {

@@ -1,9 +1,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
 #include <atomic>
 #include <chrono>
 #include <iostream>
 #include <thread>
+
 #include "AsyncATHandler.h"
 #include "Stream.h"
 #include "common.h"

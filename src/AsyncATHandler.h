@@ -1,15 +1,10 @@
 #pragma once
-
-// For actual Arduino/ESP32
 #include <Arduino.h>
 #include <Stream.h>
-
 #include <functional>
-
-#include "ATHandler.settings.h"  // Includes the updated struct definitions
+#include "ATHandler.settings.h"
 #include "freertos/FreeRTOS.h"
 
-// Define the UnsolicitedCallback type to accept const char*
 typedef std::function<void(const char *response)> UnsolicitedCallback;
 
 class AsyncATHandler {
@@ -22,35 +17,39 @@ class AsyncATHandler {
   char responseBuffer[AT_RESPONSE_BUFFER_SIZE];
   size_t responseBufferPos;
   UnsolicitedCallback unsolicitedCallback;
-  volatile bool running;
-
-  PendingCommandInfo pendingSyncCommand;
 
   // Task function
   static void readerTaskFunction(void *parameter);
+
+  // Response processing functions
   void processIncomingData();
   void handleResponse(const char *response);
+
+  // Helper functions
+  bool lineCompletesCommand(const String &line, const char *expectedResponse);
+  int8_t checkLineForExpectedResponses(const String &line, const String *responses, size_t count);
+
+  // Utility functions
   bool isUnsolicitedResponse(const char *response);
+  void handleBufferOverflow();
+  void clearResponseBuffer();
+  bool addCharToBuffer(char c);
+  bool isCompleteLineInBuffer();
+  String trimAndValidateResponse(const char *response);
 
  public:
   Stream *_stream;
-
   AsyncATHandler();
   ~AsyncATHandler();
-
   bool begin(Stream &stream);
   void end();
-
   bool sendCommandAsync(const String &command);
-
   bool sendCommand(
       const String &command, String &response, const String &expectedResponse = "OK",
       uint32_t timeout = AT_DEFAULT_TIMEOUT);
-
   bool sendCommand(
       const String &command, const String &expectedResponse = "OK",
       uint32_t timeout = AT_DEFAULT_TIMEOUT);
-
   template <typename... Args>
   bool sendCommand(
       String &response, const String &expectedResponse = "OK",
@@ -62,22 +61,28 @@ class AsyncATHandler {
     (void)std::initializer_list<int>{(cmd += String(parts), 0)...};
     return sendCommand(cmd, response, expectedResponse, timeout);
   }
-
   bool sendCommandBatch(
       const String commands[], size_t count, String responses[] = nullptr,
       uint32_t timeout = AT_DEFAULT_TIMEOUT);
-
   int waitResponse(
       const String &expectedResponse, String &response, uint32_t timeout = AT_DEFAULT_TIMEOUT);
-  ;
+
+  // Enhanced waitResponse methods
+  int8_t waitResponse(uint32_t timeout = AT_DEFAULT_TIMEOUT);
+
+  // Variadic template for multiple expected responses
+  template <typename... Args>
+  int8_t waitResponse(Args&&... expectedResponses);
+
+  template <typename... Args>
+  int8_t waitResponse(uint32_t timeout, Args&&...expectedResponses);
 
   void setUnsolicitedCallback(UnsolicitedCallback callback);
-
   bool hasResponse();
   ATResponse getResponse();
-
   void flushResponseQueue();
   size_t getQueuedCommandCount();
   size_t getQueuedResponseCount();
-  bool isRunning() const { return running; }
 };
+
+#include "AsyncATHandler.tpp"

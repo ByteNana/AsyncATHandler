@@ -15,8 +15,8 @@ enum LogLevel {
   LOG_LEVEL_VERBOSE = 5
 };
 
-#ifndef CONFIG_MY_LOG_DEFAULT_LEVEL
-#define CONFIG_MY_LOG_DEFAULT_LEVEL LOG_LEVEL_INFO
+#ifndef LOG_LEVEL
+#define LOG_LEVEL LOG_LEVEL_INFO
 #endif
 
 #define LOG_COLOR_RED "\x1b[31m"
@@ -34,7 +34,7 @@ static std::mutex s_log_output_mutex;
 static inline void _log_write(
     int level, const char* color, const char* prefix, const char* file, int line, const char* fmt,
     ...) {
-  if (level > CONFIG_MY_LOG_DEFAULT_LEVEL) return;
+  if (level > LOG_LEVEL) return;
 
   std::lock_guard<std::mutex> lock(s_log_output_mutex);
 

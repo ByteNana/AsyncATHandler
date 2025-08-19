@@ -5,152 +5,57 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 
-// AsyncATHandler.responses.cpp - Simplified without pending command logic
-
-void AsyncATHandler::processIncomingData() {
-  if (!xSemaphoreTake(mutex, pdMS_TO_TICKS(100))) { return; }
-
-  // Always process data if we have streams and queues
-  if (!_stream || !responseQueue) {
-    xSemaphoreGive(mutex);
-    return;
-  }
-
-  while (_stream->available()) {
-    char c = static_cast<char>(_stream->read());
-
-    if (!addCharToBuffer(c)) {
-      handleBufferOverflow();
-      continue;
-    }
-
-    if (isCompleteLineInBuffer()) {
-      handleResponse(responseBuffer);
-      clearResponseBuffer();
-    }
-  }
-
-  xSemaphoreGive(mutex);
-}
-
 void AsyncATHandler::handleResponse(const char* response) {
-  String line = trimAndValidateResponse(response);
+  String line = String(response);
 
-  // Ignore empty lines
   if (line.length() == 0) { return; }
-
-  // Handle unsolicited responses via callback
-  if (isUnsolicitedResponse(line.c_str())) {
-    if (unsolicitedCallback) {
-      unsolicitedCallback(line.c_str());
-    }
-    return;
-  }
-
-  // All other responses go to the response queue
-  ATResponse resp;
-  resp.commandId = 0; // No specific command tracking needed
-  strncpy(resp.response, response, AT_RESPONSE_BUFFER_SIZE - 1);
-  resp.response[AT_RESPONSE_BUFFER_SIZE - 1] = '\0';
-  resp.success = true;
-  resp.timestamp = millis();
-
-  if (xQueueSend(responseQueue, &resp, pdMS_TO_TICKS(10)) != pdTRUE) {
-    log_w("Failed to enqueue response: '%s'", line.c_str());
-  } else {
-    log_d("Enqueued response: '%s'", line.c_str());
-  }
 }
 
-// Keep the existing helper functions but remove pending command specific ones
-bool AsyncATHandler::lineCompletesCommand(const String& line, const char* expectedResponse) {
-  // Always check for standard completion responses first
-  if (line == "OK" || line == "ERROR") { return true; }
+int8_t AsyncATHandler::waitResponseMultiple(
+    uint32_t timeout, const char* expectedResponses[], size_t count) {
+  unsigned long startTime = millis();
 
-  // Then check for custom expected response
-  if (strlen(expectedResponse) > 0 && strstr(line.c_str(), expectedResponse) != nullptr) {
-    return true;
+  if (count == 0 || expectedResponses == nullptr) {
+    expectedResponses[0] = "OK";  // Default to waiting for "OK" if no responses provided
+    count = 1;                    // Set count to 1 since we are now waiting for
   }
 
-  return false;
-}
-
-void AsyncATHandler::flushResponseQueue() {
-  if (!responseQueue || !mutex) { return; }
-
-  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100))) {
-    ATResponse resp;
-    while (uxQueueMessagesWaiting(responseQueue) > 0) {
-      if (xQueueReceive(responseQueue, &resp, 0) != pdTRUE) { break; }
-    }
-    xSemaphoreGive(mutex);
-  } else {
-    log_w("Failed to acquire mutex for flush operation.");
-  }
-}
-
-int AsyncATHandler::waitResponse(
-    const String& expectedResponse, String& response, uint32_t timeout) {
-  uint32_t startMillis = millis();
-  String collectedResponse = "";
-
-  while (millis() - startMillis < timeout) {
-    ATResponse resp;
-    if (xQueueReceive(responseQueue, &resp, pdMS_TO_TICKS(100)) == pdTRUE) {
-      String line(resp.response);
-      line.trim();
-      collectedResponse += line + "\n";
-
-      if (line.indexOf(expectedResponse) != -1) {
-        response = collectedResponse;
-        return 1;
+  log_d("Waiting for any of %zu expected responses, Timeout: %lu ms", count, timeout);
+  while (millis() - startTime < timeout) {
+    for (size_t i = 0; i < count; i++) {
+      if (strstr(responseBuffer, expectedResponses[i])) {
+        log_d("Received expected response: %s", expectedResponses[i]);
+        return i + 1;
       }
     }
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
-
-  response = collectedResponse;
+  log_w("Timeout waiting for any expected response");
   return 0;
 }
 
 int8_t AsyncATHandler::waitResponse(uint32_t timeout) {
-  uint32_t startMillis = millis();
-  log_d("waitResponse(timeout=%lu) started", timeout);
-
-  while (millis() - startMillis < timeout) {
-    ATResponse resp;
-    BaseType_t queueResult = xQueueReceive(responseQueue, &resp, pdMS_TO_TICKS(100));
-
-    if (queueResult == pdTRUE) {
-      String line(resp.response);
-      line.trim();
-      log_d("waitResponse got response: '%s', length: %d", line.c_str(), line.length());
-
-      if (line.length() > 0) {
-        log_d("waitResponse returning 1 (found response)");
-        return 1;  // Found any response
-      } else {
-        log_d("waitResponse ignoring empty response");
-      }
-    } else {
-      log_d("waitResponse: no queue data available");
-    }
-  }
-
-  log_d("waitResponse timeout after %lu ms", timeout);
-  return -1;  // Timeout
+  const char* expectedResponses[] = {"OK"};
+  return waitResponseMultiple(timeout, expectedResponses, 1);
 }
 
-int8_t AsyncATHandler::checkLineForExpectedResponses(
-    const String& line, const String* responses, size_t count) {
-  log_d("checkLineForExpectedResponses: checking '%s' against %zu responses", line.c_str(), count);
+bool AsyncATHandler::sendCommand(
+    const String& command, const String& expectedResponse, uint32_t timeout) {
+  String response;
+  return sendCommand(command, response, expectedResponse, timeout);
+}
 
-  for (size_t i = 0; i < count; i++) {
-    log_d("  Checking against[%zu]: '%s'", i, responses[i].c_str());
-    if (line.indexOf(responses[i]) >= 0) {
-      log_d("  MATCH found at index %zu", i);
-      return i + 1;  // Return 1-based index
-    }
+bool AsyncATHandler::sendCommand(
+    const String& command, String& response, const String& expectedResponse, uint32_t timeout) {
+  sendAT(command);
+  int8_t result = waitResponse(timeout, expectedResponse.c_str());
+
+  if (result > 0) {
+    response = sanitizeResponseBuffer(expectedResponse);
+    log_d("Command sent: %s, Response: %s", command.c_str(), response.c_str());
+    return true;
+  } else {
+    response = sanitizeResponseBuffer(expectedResponse);
+    return false;
   }
-  log_d("  No matches found");
-  return -1;  // Not found
 }

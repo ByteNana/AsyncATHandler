@@ -1,58 +1,45 @@
-#pragma once
-
-// Template implementation for multiple expected responses (default timeout)
+#include "esp_log.h"
 
 template <typename... Args>
-int8_t AsyncATHandler::waitResponse(Args&&... expectedResponses) {
-  // Convert all arguments to String array
-  String responses[] = {String(expectedResponses)...};
-  size_t responseCount = sizeof...(expectedResponses);
-
-  uint32_t startMillis = millis();
-
-  while (millis() - startMillis < AT_DEFAULT_TIMEOUT) {
-    ATResponse resp;
-    if (xQueueReceive(responseQueue, &resp, pdMS_TO_TICKS(100)) == pdTRUE) {
-      String line(resp.response);
-      line.trim();
-
-      if (line.length() > 0) {
-        for (size_t i = 0; i < responseCount; i++) {
-          if (line.indexOf(responses[i]) >= 0) {
-            return i + 1;  // Return 1-based index
-          }
-        }
-      }
-    }
+void AsyncATHandler::sendAT(Args... cmd) {
+  if (_stream == nullptr) {
+    log_e("Stream not initialized");
+    return;
   }
-
-  return -1;  // Timeout
+  String command = String(cmd...);
+  command += "\r\n";
+  _stream->print(command);
+  _stream->flush();
+  log_d("Sent command: %s", command.c_str());
 }
 
-// Template implementation for multiple expected responses (custom timeout)
-template <typename... Args>
-int8_t AsyncATHandler::waitResponse(uint32_t timeout, Args&&... expectedResponses) {
-  // Convert all arguments to String array
-  String responses[] = {String(expectedResponses)...};
-  size_t responseCount = sizeof...(expectedResponses);
+// Helper functions for different string types
+inline const char* to_cstring(const String& str) { return str.c_str(); }
+inline const char* to_cstring(const std::string& str) { return str.c_str(); }
+inline const char* to_cstring(const char* str) { return str; }
+inline const char* to_cstring(char* str) { return str; }
+inline const char* to_cstring(int) { return nullptr; }
 
-  uint32_t startMillis = millis();
-
-  while (millis() - startMillis < timeout) {
-    ATResponse resp;
-    if (xQueueReceive(responseQueue, &resp, pdMS_TO_TICKS(100)) == pdTRUE) {
-      String line(resp.response);
-      line.trim();
-
-      if (line.length() > 0) {
-        for (size_t i = 0; i < responseCount; i++) {
-          if (line.indexOf(responses[i]) >= 0) {
-            return i + 1;  // Return 1-based index
-          }
-        }
-      }
-    }
+template <typename FirstArg, typename... RestArgs>
+int8_t AsyncATHandler::waitResponse(FirstArg &&first, RestArgs &&...rest) {
+  if constexpr (std::is_arithmetic_v<std::decay_t<FirstArg>>) {
+    // First argument is timeout
+    const char *responses[] = {to_cstring(rest)...};
+    return waitResponseMultiple(static_cast<unsigned long>(first), responses, sizeof...(rest));
+  } else {
+    // First argument is a response string
+    const char *responses[] = {to_cstring(first), to_cstring(rest)...};
+    return waitResponseMultiple(AT_DEFAULT_TIMEOUT, responses, sizeof...(RestArgs) + 1);
   }
+}
 
-  return -1;  // Timeout
+template <typename... Args>
+bool AsyncATHandler::sendCommand(
+    String &response, const String &expectedResponse, uint32_t timeout, Args &&...parts) {
+  String cmd;
+  size_t reserveSize = 0;
+  (void)std::initializer_list<int>{(reserveSize += String(parts).length(), 0)...};
+  cmd.reserve(reserveSize);
+  (void)std::initializer_list<int>{(cmd += String(parts), 0)...};
+  return sendCommand(cmd, response, expectedResponse, timeout);
 }

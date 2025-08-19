@@ -5,82 +5,57 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 
-String AsyncATHandler::trimAndValidateResponse(const char* response) {
-  String line(response);
-  line.trim();
-  return line;
-}
-
-void AsyncATHandler::handleBufferOverflow() {
-  log_w("responseBuffer overflow. Clearing.");
-  clearResponseBuffer();
-}
-
-void AsyncATHandler::clearResponseBuffer() {
+void AsyncATHandler::flushResponseBuffer() {
   memset(responseBuffer, 0, sizeof(responseBuffer));
   responseBufferPos = 0;
 }
 
-bool AsyncATHandler::addCharToBuffer(char c) {
-  if (responseBufferPos < AT_RESPONSE_BUFFER_SIZE - 1) {
-    responseBuffer[responseBufferPos++] = c;
+String AsyncATHandler::sanitizeResponseBuffer(const String& expectedResponse) {
+  String result = "";
+
+  if (responseBufferPos == 0) { return result; }
+
+  // Find the position of the expected response
+  char* foundPos = strstr(responseBuffer, expectedResponse.c_str());
+
+  // If the expected response is not found, return the entire buffer
+  if (foundPos == nullptr) {
+    result = String(responseBuffer);
+    flushResponseBuffer();
+    return result;
+  }
+
+  if (foundPos != nullptr) {
+    // Find the end of the line containing the expected response
+    char* lineEnd = strchr(foundPos, '\n');
+    if (lineEnd == nullptr) {
+      // If no newline found, use end of buffer
+      lineEnd = responseBuffer + responseBufferPos;
+    } else {
+      lineEnd++;  // Include the newline
+    }
+
+    // Extract response from beginning to end of found line
+    size_t responseLength = lineEnd - responseBuffer;
+    result = String(responseBuffer).substring(0, responseLength);
+
+    // Remove the extracted portion from buffer
+    size_t remainingLength = responseBufferPos - responseLength;
+
+    // Buffer is empty after extraction
+    if (remainingLength <= 0) {
+      flushResponseBuffer();
+      return result;
+    }
+
+    memmove(responseBuffer, lineEnd, remainingLength);
+    responseBufferPos = remainingLength;
     responseBuffer[responseBufferPos] = '\0';
-    return true;
   }
-  return false;
+
+  return result;
 }
 
-bool AsyncATHandler::isCompleteLineInBuffer() {
-  return responseBufferPos >= 2 && responseBuffer[responseBufferPos - 2] == '\r' &&
-         responseBuffer[responseBufferPos - 1] == '\n';
-}
-void AsyncATHandler::setUnsolicitedCallback(UnsolicitedCallback callback) {
-  // Check if mutex exists before taking it
-  if (mutex && xSemaphoreTake(mutex, portMAX_DELAY) == pdTRUE) {
-    unsolicitedCallback = callback;
-    xSemaphoreGive(mutex);
-    log_d("Callback set.");
-  } else {
-    log_e("Failed to acquire mutex to set callback (mutex: %s).", (mutex ? "exists" : "null"));
-  }
-}
-
-size_t AsyncATHandler::getQueuedCommandCount() {
-  if (!commandQueue || !mutex) { return 0; }
-  size_t count = 0;
-  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
-    count = uxQueueMessagesWaiting(commandQueue);
-    xSemaphoreGive(mutex);
-  } else {
-    log_w("Failed to acquire mutex.");
-  }
-  return count;
-}
-
-size_t AsyncATHandler::getQueuedResponseCount() {
-  if (!responseQueue || !mutex) { return 0; }
-  size_t count = 0;
-  if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
-    count = uxQueueMessagesWaiting(responseQueue);
-    xSemaphoreGive(mutex);
-  } else {
-    log_w("Failed to acquire mutex.");
-  }
-  return count;
-}
-
-bool AsyncATHandler::isUnsolicitedResponse(const char* response) {
-  // Use strncmp for prefix matching
-  return strncmp(response, "+CMT:", 5) == 0 ||        // SMS received
-         strncmp(response, "+CMTI:", 6) == 0 ||       // SMS indication
-         strncmp(response, "+CLIP:", 6) == 0 ||       // Calling line identification
-         strncmp(response, "+CREG:", 6) == 0 ||       // Network registration
-         strncmp(response, "+CPIN:", 6) == 0 ||       // PIN status
-         strncmp(response, "+CSQ:", 5) == 0 ||        // Signal quality
-         strncmp(response, "+CGEV:", 6) == 0 ||       // GPRS event
-         strncmp(response, "+CUSD:", 6) == 0 ||       // USSD response
-         strncmp(response, "RING", 4) == 0 ||         // Incoming call
-         strncmp(response, "NO CARRIER", 10) == 0 ||  // Call ended
-         strncmp(response, "BUSY", 4) == 0 ||         // Line busy
-         strncmp(response, "NO ANSWER", 9) == 0;      // No answer
+String AsyncATHandler::getResponse(const String& expectedResponse) {
+  return sanitizeResponseBuffer(expectedResponse);
 }

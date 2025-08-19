@@ -81,6 +81,8 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
 
         // Wait for responder to complete
         while (!responderData.complete.load()) { vTaskDelay(pdMS_TO_TICKS(10)); }
+        log_i("[Response] Sent data: '%s'", sentData.c_str());
+        log_i("[Response] Response: '%s'", response.c_str());
 
         if (!sendResult || sentData != "AT+VAR\r\n" || response != "OK\r\n") {
           throw std::runtime_error("Test failed: variadic command building or response incorrect");
@@ -91,33 +93,33 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
   EXPECT_TRUE(testResult);
 }
 
-TEST_F(AsyncATHandlerAdvancedTest, UnsolicitedResponseHandling) {
-  bool testResult = runInFreeRTOSTask(
-      [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
-
-        std::atomic<bool> callbackCalled{false};
-        String unsolicitedData;
-
-        handler->setUnsolicitedCallback([&](const String& response) {
-          callbackCalled = true;
-          unsolicitedData = response;
-          log_i("[Callback] Unsolicited response received: '%s'", response.c_str());
-        });
-
-        log_i("[Test Task] Injecting unsolicited data...");
-        mockStream->InjectRxData("+CMT: \"+1234567890\",\"\",\"24/01/15,10:30:00\"\r\n");
-        mockStream->InjectRxData("Hello World\r\n");
-        vTaskDelay(pdMS_TO_TICKS(200));
-
-        if (!callbackCalled) throw std::runtime_error("Callback not called");
-        if (!unsolicitedData.startsWith("+CMT:"))
-          throw std::runtime_error("Incorrect unsolicited data");
-      },
-      "UnsolicitedTest");
-
-  EXPECT_TRUE(testResult);
-}
+// TEST_F(AsyncATHandlerAdvancedTest, UnsolicitedResponseHandling) {
+//   bool testResult = runInFreeRTOSTask(
+//       [this]() {
+//         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+//
+//         std::atomic<bool> callbackCalled{false};
+//         String unsolicitedData;
+//
+//         handler->setUnsolicitedCallback([&](const String& response) {
+//           callbackCalled = true;
+//           unsolicitedData = response;
+//           log_i("[Callback] Unsolicited response received: '%s'", response.c_str());
+//         });
+//
+//         log_i("[Test Task] Injecting unsolicited data...");
+//         mockStream->InjectRxData("+CMT: \"+1234567890\",\"\",\"24/01/15,10:30:00\"\r\n");
+//         mockStream->InjectRxData("Hello World\r\n");
+//         vTaskDelay(pdMS_TO_TICKS(200));
+//
+//         if (!callbackCalled) throw std::runtime_error("Callback not called");
+//         if (!unsolicitedData.startsWith("+CMT:"))
+//           throw std::runtime_error("Incorrect unsolicited data");
+//       },
+//       "UnsolicitedTest");
+//
+//   EXPECT_TRUE(testResult);
+// }
 
 TEST_F(AsyncATHandlerAdvancedTest, LongResponseNotTruncated) {
   bool testResult = runInFreeRTOSTask(

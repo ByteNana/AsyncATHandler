@@ -87,7 +87,7 @@ include_directories(
   ${LIB_SRC_DIR}
   ${freertos_sim_SOURCE_DIR}/Source/include
   ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/Posix
-  ${freertos_sim_SOURCE_DIR}/Project
+  ${MOCK_INC_DIR}/freertos
   ${freertos_sim_SOURCE_DIR}
   ${gmock_SOURCE_DIR}/include
   ${gtest_SOURCE_DIR}/include

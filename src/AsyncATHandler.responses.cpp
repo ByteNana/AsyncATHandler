@@ -23,7 +23,7 @@ int8_t AsyncATHandler::waitResponseMultiple(
   log_d("Waiting for any of %zu expected responses, Timeout: %lu ms", count, timeout);
   while (millis() - startTime < timeout) {
     for (size_t i = 0; i < count; i++) {
-      if (strstr(responseBuffer, expectedResponses[i])) {
+      if (expectedResponses[i] && strstr(responseBuffer, expectedResponses[i])) {
         log_d("Received expected response: %s", expectedResponses[i]);
         return i + 1;
       }

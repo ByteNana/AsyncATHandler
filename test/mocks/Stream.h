@@ -18,6 +18,14 @@ class Stream {
   virtual size_t write(const uint8_t* buffer, size_t size) = 0;
   virtual void flush() = 0;
   virtual int peek() = 0;
+  virtual size_t print(int value) { return print(String(value)); }
+  virtual size_t print(uint16_t value) { return print(String(value)); }
+
+  virtual size_t println() { return println(""); }  // Empty line
+  virtual size_t println(int value) { return println(String(value)); }
+
+  // Add timedRead for HttpClient
+  virtual int timedRead() { return read(); }
 
   // These `print` methods are fine, they delegate to `write`.
   size_t print(const String& str) {
@@ -102,6 +110,11 @@ class MockStream : public Stream {
     std::lock_guard<std::mutex> lock(txMutex);
     std::queue<uint8_t> emptyQueue;
     std::swap(txBuffer, emptyQueue);
+  }
+  void ClearRxData() {
+    std::lock_guard<std::mutex> lock(rxMutex);
+    std::queue<uint8_t> emptyQueue;
+    std::swap(rxBuffer, emptyQueue);
   }
   operator bool() const { return true; }
 };

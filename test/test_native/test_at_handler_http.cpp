@@ -290,7 +290,7 @@ TEST_F(AsyncATHandlerHTTPTest, SendLargeHttpDataOverTcp) {
         mockStream->ClearTxData();  // Clear before starting
 
         while (sent < totalDataLength) {
-          size_t currentChunkSize = std::min(chunkSize, totalDataLength - sent);
+          size_t currentChunkSize = min(chunkSize, totalDataLength - sent);
 
           log_i(
               "[Test] Sending chunk %d: %zu bytes (offset: %zu)", chunkNumber, currentChunkSize,

@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 #include <type_traits>
 
@@ -48,6 +47,18 @@ class String : public std::string {
     return (pos == std::string::npos) ? -1 : static_cast<int>(pos);
   }
 
+  int indexOf(char c, int fromIndex) const {
+    if (fromIndex < 0) fromIndex = 0;
+    size_t pos = find(c, static_cast<size_t>(fromIndex));
+    return (pos == std::string::npos) ? -1 : static_cast<int>(pos);
+  }
+
+  int indexOf(const String& str, int fromIndex) const {
+    if (fromIndex < 0) fromIndex = 0;
+    size_t pos = find(str, static_cast<size_t>(fromIndex));
+    return (pos == std::string::npos) ? -1 : static_cast<int>(pos);
+  }
+
   int lastIndexOf(char c) const {
     size_t pos = rfind(c);
     return (pos == std::string::npos) ? -1 : static_cast<int>(pos);
@@ -69,5 +80,57 @@ class String : public std::string {
     try {
       return std::stoi(*this);
     } catch (...) { return 0; }
+  }
+
+  bool reserve(size_t size) {
+    try {
+      std::string::reserve(size);
+      return true;
+    } catch (...) { return false; }
+  }
+
+  bool concat(char c) {
+    try {
+      *this += c;
+      return true;
+    } catch (...) { return false; }
+  }
+
+  bool concat(const String& str) {
+    try {
+      *this += str;
+      return true;
+    } catch (...) { return false; }
+  }
+
+  bool concat(const char* str) {
+    try {
+      *this += str;
+      return true;
+    } catch (...) { return false; }
+  }
+
+  // length() method (alias for size())
+  size_t length() const { return size(); }
+  void replace(char find, char replace) {
+    for (size_t i = 0; i < length(); i++) {
+      if ((*this)[i] == find) { (*this)[i] = replace; }
+    }
+  }
+
+  void replace(const String& find, const String& replace) {
+    if (find.empty()) return;
+
+    size_t pos = 0;
+    while ((pos = std::string::find(find, pos)) != std::string::npos) {
+      std::string::replace(pos, find.length(), replace);
+      pos += replace.length();
+    }
+  }
+
+  void replace(const char* find, const String& replace) { this->replace(String(find), replace); }
+
+  void replace(const char* find, const char* replace) {
+    this->replace(String(find), String(replace));
   }
 };

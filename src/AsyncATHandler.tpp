@@ -1,12 +1,22 @@
 #include "esp_log.h"
 
+inline void appendTo(String& dst, const char* s)        { dst += s; }
+inline void appendTo(String& dst, const std::string& s) { dst += s.c_str(); }
+inline void appendTo(String& dst, const String& s)      { dst += s; }
+
+// generic arithmetic
+template <typename T>
+inline std::enable_if_t<std::is_arithmetic_v<T>, void>
+appendTo(String& dst, T v) { dst += String(v); }
+
 template <typename... Args>
 void AsyncATHandler::sendAT(Args... cmd) {
   if (_stream == nullptr) {
     log_e("Stream not initialized");
     return;
   }
-  String command = String(cmd...);
+  String command;
+  (appendTo(command, std::forward<Args>(cmd)), ...); // C++17 fold
   command += "\r\n";
   _stream->print(command);
   _stream->flush();
@@ -18,7 +28,7 @@ inline const char* to_cstring(const String& str) { return str.c_str(); }
 inline const char* to_cstring(const std::string& str) { return str.c_str(); }
 inline const char* to_cstring(const char* str) { return str; }
 inline const char* to_cstring(char* str) { return str; }
-inline const char* to_cstring(int) { return nullptr; }
+inline std::string to_cstring(int value) { return std::to_string(value); }
 
 template <typename FirstArg, typename... RestArgs>
 int8_t AsyncATHandler::waitResponse(FirstArg &&first, RestArgs &&...rest) {

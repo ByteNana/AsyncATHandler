@@ -16,6 +16,13 @@ class AsyncATHandler {
 
   char responseBuffer[AT_RESPONSE_BUFFER_SIZE];
   size_t responseBufferPos;
+  char pendingDataBuffer[AT_RESPONSE_BUFFER_SIZE];
+  size_t pendingDataPos = 0;
+  bool hasCompleteResponse = false;
+
+  void extractCompleteResponse();
+  bool isResponseComplete();
+  void moveToDataBuffer();
 
   static void readerTaskFunction(void *parameter);
   void flushResponseBuffer();
@@ -25,6 +32,8 @@ class AsyncATHandler {
   void handleResponse(const char *response);
   String sanitizeResponseBuffer(const String &expectedResponse);
 
+  int readFromBuffer();
+
  public:
   AsyncATHandler();
   ~AsyncATHandler();
@@ -32,6 +41,7 @@ class AsyncATHandler {
   Stream *_stream;
   bool begin(Stream &stream);
   void end();
+  int available();
   template <typename... Args>
   void sendAT(Args... cmd);
   int8_t waitResponseMultiple(uint32_t timeout, const char *expectedResponses[], size_t count);
@@ -52,6 +62,10 @@ class AsyncATHandler {
       uint32_t timeout = AT_DEFAULT_TIMEOUT, Args &&...parts);
 
   String getResponse(const String &expectedResponse);
+
+  // Re-implemented read() method to read from the internal buffer
+  int read();
+  int readData(uint8_t *buf, size_t size);
 };
 
 #include "AsyncATHandler.tpp"

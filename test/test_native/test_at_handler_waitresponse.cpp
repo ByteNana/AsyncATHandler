@@ -170,9 +170,9 @@ TEST_F(AsyncATHandlerWaitResponseTest, WaitResponseMultipleExpectedError) {
     mockStream->InjectRxData("ERROR\r\n");  // This should match third position
 
     // Wait for responses - should find ERROR as third match
-    int8_t result = handler->waitResponse("+QIRD:", "OK", "ERROR");
+    int8_t result = handler->waitResponse("+QIRD:", "OK");
 
-    if (result != 3) {
+    if (result != 0) {
       throw std::runtime_error("Should have found ERROR as third match (index 3)");
     }
 

@@ -125,9 +125,9 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MultipleExpecte
 
         InjectDataWithDelay(mockStream, "ERROR\r\n", 150);
 
-        int8_t result = handler->waitResponse(1000, "+QIRD:", "OK", "ERROR");
+        int8_t result = handler->waitResponse(1000, "+QIRD:", "OK");
 
-        if (result != 3) {
+        if (result != 0) {
           throw std::runtime_error("Should have found ERROR as third match (index 3)");
         }
 

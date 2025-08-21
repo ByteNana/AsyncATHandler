@@ -3,8 +3,7 @@
 #include <esp_log.h>
 
 bool AsyncATHandler::isCompleteLineInBuffer() {
-  return responseBufferPos >= 2 &&
-         responseBuffer[responseBufferPos - 2] == '\r' &&
+  return responseBufferPos >= 2 && responseBuffer[responseBufferPos - 2] == '\r' &&
          responseBuffer[responseBufferPos - 1] == '\n';
 }
 
@@ -35,7 +34,11 @@ void AsyncATHandler::processIncomingData() {
     }
 
     if (isCompleteLineInBuffer()) {
-      handleResponse(responseBuffer);
+      // Check if we have a complete AT response
+      if (isResponseComplete()) {
+        // Process the complete response
+        handleResponse(responseBuffer);
+      }
     }
   }
 

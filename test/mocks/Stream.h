@@ -10,7 +10,11 @@
 #include "Arduino.h"
 
 class Stream {
+protected:
+  unsigned long _startMillis;
+  unsigned long _timeout;
  public:
+  Stream(unsigned long timeout = 1000) : _startMillis(0), _timeout(timeout) {}
   virtual ~Stream() = default;
   virtual int available() = 0;
   virtual int read() = 0;
@@ -25,7 +29,15 @@ class Stream {
   virtual size_t println(int value) { return println(String(value)); }
 
   // Add timedRead for HttpClient
-  virtual int timedRead() { return read(); }
+  int timedRead() {
+    int c;
+    _startMillis = millis();
+    do {
+      c = read();
+      if (c >= 0) { return c; }
+    } while (millis() - _startMillis < _timeout);
+    return -1;  // -1 indicates timeout
+  }
 
   // These `print` methods are fine, they delegate to `write`.
   size_t print(const String& str) {

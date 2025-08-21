@@ -171,4 +171,6 @@ class String : public std::string {
       erase(index, to_remove);
     }
   }
+
+  bool isEmpty() const { return empty(); }
 };

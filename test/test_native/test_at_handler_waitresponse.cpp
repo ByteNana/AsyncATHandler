@@ -24,10 +24,8 @@ class AsyncATHandlerWaitResponseTest : public FreeRTOSTest {
 
   void TearDown() override {
     if (handler) {
-      bool success = runInFreeRTOSTask([this]() { handler->end(); }, "TeardownTask");
-
+      bool success = CleanupATHandler(handler);
       if (!success) { log_w("Handler teardown may have failed"); }
-
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
       delete handler;
       handler = nullptr;

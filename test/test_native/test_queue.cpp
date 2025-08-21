@@ -6,17 +6,6 @@
 
 #include "common.h"
 
-// Test message structure (assuming this was in test_common.h)
-struct TestMessage {
-  int id;
-  const char* name;
-  float value;
-
-  bool operator==(const TestMessage& other) const {
-    return id == other.id && strcmp(name, other.name) == 0 && value == other.value;
-  }
-};
-
 class QueueTest : public FreeRTOSTest {};
 
 TEST_F(QueueTest, CreateDelete) {

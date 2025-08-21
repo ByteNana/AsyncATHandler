@@ -24,7 +24,7 @@ class AsyncATHandlerSyncTest : public FreeRTOSTest {
 
   void TearDown() override {
     if (handler) {
-      bool success = runInFreeRTOSTask([this]() { handler->end(); }, "TeardownTask");
+      bool success = CleanupATHandler(handler);
 
       if (!success) { log_w("Handler teardown may have failed"); }
 

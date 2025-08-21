@@ -24,7 +24,7 @@ class AsyncATHandlerWaitResponseComprehensiveTest : public FreeRTOSTest {
 
   void TearDown() override {
     if (handler) {
-      bool success = runInFreeRTOSTask([this]() { handler->end(); }, "TeardownTask");
+      bool success = CleanupATHandler(handler);
       if (!success) { log_w("Handler teardown may have failed"); }
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
       delete handler;
@@ -37,32 +37,6 @@ class AsyncATHandlerWaitResponseComprehensiveTest : public FreeRTOSTest {
     FreeRTOSTest::TearDown();
   }
 
-  // Helper to inject data with delay in separate task
-  void InjectDataWithDelay(const std::string& data, uint32_t delayMs = 50) {
-    struct InjectorData {
-      AsyncATHandlerWaitResponseComprehensiveTest* test;
-      std::string data;
-      uint32_t delay;
-      std::atomic<bool> complete{false};
-    };
-
-    auto* injectorData = new InjectorData{this, data, delayMs, {false}};
-
-    auto injectorTask = [](void* pvParameters) {
-      auto* data = static_cast<InjectorData*>(pvParameters);
-      vTaskDelay(pdMS_TO_TICKS(data->delay));
-      data->test->mockStream->InjectRxData(data->data);
-      data->complete = true;
-      delete data;
-      vTaskDelete(nullptr);
-    };
-
-    TaskHandle_t injectorHandle = nullptr;
-    xTaskCreate(
-        injectorTask, "InjectorTask", configMINIMAL_STACK_SIZE * 2, injectorData, 1,
-        &injectorHandle);
-  }
-
  public:
   NiceMock<MockStream>* mockStream;
   AsyncATHandler* handler;
@@ -73,7 +47,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_DefaultTimeout_
       [this]() {
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay("OK\r\n", 100);
+        InjectDataWithDelay(mockStream, "OK\r\n", 100);
 
         if (!handler->waitResponse()) {
           throw std::runtime_error("Should have found response with default timeout");
@@ -91,7 +65,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_CustomTimeout_A
       [this]() {
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay("+QISTATE: 0,\"TCP\"\r\nOK\r\n", 100);
+        InjectDataWithDelay(mockStream, "+QISTATE: 0,\"TCP\"\r\nOK\r\n", 100);
 
         int8_t result = handler->waitResponse(2000);  // 2 second timeout
 
@@ -111,7 +85,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_SingleExpected_
       [this]() {
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay("+QISTATE: 0,\"TCP\",\"connected\"\r\n", 100);
+        InjectDataWithDelay(mockStream, "+QISTATE: 0,\"TCP\",\"connected\"\r\n", 100);
 
         int8_t result = handler->waitResponse("+QISTATE:");
 
@@ -129,7 +103,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MultipleExpecte
       [this]() {
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay("+QIRD: 1024,data_here\r\n", 100);
+        InjectDataWithDelay(mockStream, "+QIRD: 1024,data_here\r\n", 100);
 
         int8_t result = handler->waitResponse("+QIRD:", "OK", "ERROR");
 
@@ -149,7 +123,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MultipleExpecte
       [this]() {
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay("ERROR\r\n", 150);
+        InjectDataWithDelay(mockStream, "ERROR\r\n", 150);
 
         int8_t result = handler->waitResponse(1000, "+QIRD:", "OK", "ERROR");
 
@@ -169,7 +143,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_StringObjects) 
       [this]() {
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay("OK\r\n", 100);
+        InjectDataWithDelay(mockStream, "OK\r\n", 100);
 
         String expected1 = "+QIRD:";
         String expected2 = "OK";
@@ -193,7 +167,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_MixedTypes) {
       [this]() {
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay("+CONNECT\r\n", 100);
+        InjectDataWithDelay(mockStream, "+CONNECT\r\n", 100);
 
         String expectedString = "+CONNECT";
         const char* expectedCStr = "OK";
@@ -221,14 +195,14 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_TimeoutScenario
         if (result1 != 0) { throw std::runtime_error("Should have timed out with no data"); }
 
         // Test 2: Data that doesn't match - should timeout
-        InjectDataWithDelay("DIFFERENT_RESPONSE\r\n", 50);
+        InjectDataWithDelay(mockStream, "DIFFERENT_RESPONSE\r\n", 50);
         int8_t result2 = handler->waitResponse(300, "EXPECTED", "ALSO_EXPECTED");
         if (result2 != 0) {
           throw std::runtime_error("Should have timed out with non-matching data");
         }
 
         // Test 3: Data arrives after timeout - should timeout
-        InjectDataWithDelay("OK\r\n", 400);  // Arrives after timeout
+        InjectDataWithDelay(mockStream, "OK\r\n", 400);  // Arrives after timeout
         int8_t result3 = handler->waitResponse(200, "OK");
         if (result3 != 0) {
           throw std::runtime_error("Should have timed out when data arrives late");
@@ -246,7 +220,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_ManyExpectedRes
       [this]() {
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay("+RESPONSE7\r\n", 100);
+        InjectDataWithDelay(mockStream, "+RESPONSE7\r\n", 100);
 
         int8_t result = handler->waitResponse(
             1000, "+RESPONSE1", "+RESPONSE2", "+RESPONSE3", "+RESPONSE4", "+RESPONSE5",
@@ -269,7 +243,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_PartialMatches)
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
         InjectDataWithDelay(
-            "+QIRD: 1024,some_very_long_data_payload_here_with_lots_of_info\r\n", 100);
+            mockStream, "+QIRD: 1024,some_very_long_data_payload_here_with_lots_of_info\r\n", 100);
 
         // Should match because "+QIRD:" is contained in the response
         int8_t result = handler->waitResponse(1000, "+QIRD:", "NOMATCH", "ALSONOMATCH");
@@ -290,7 +264,7 @@ TEST_F(AsyncATHandlerWaitResponseComprehensiveTest, WaitResponse_OldSignature) {
       [this]() {
         if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay("+CGMI: SIMCOM\r\nOK\r\n", 100);
+        InjectDataWithDelay(mockStream, "+CGMI: SIMCOM\r\nOK\r\n", 100);
 
         int result = handler->waitResponse(1000, "OK");
         if (result != 1) { throw std::runtime_error("Should have found OK response"); }

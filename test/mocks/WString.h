@@ -16,6 +16,22 @@ class String : public std::string {
     return *this;
   }
 
+  // Add only the missing operators that are essential
+  String& operator+=(const String& str) {
+    std::string::operator+=(str);
+    return *this;
+  }
+
+  String& operator+=(const char* str) {
+    std::string::operator+=(str);
+    return *this;
+  }
+
+  String& operator+=(char c) {
+    std::string::operator+=(c);
+    return *this;
+  }
+
   char charAt(int index) const {
     if (index >= 0 && static_cast<size_t>(index) < size()) { return (*this)[index]; }
     return '\0';
@@ -61,6 +77,12 @@ class String : public std::string {
 
   int lastIndexOf(char c) const {
     size_t pos = rfind(c);
+    return (pos == std::string::npos) ? -1 : static_cast<int>(pos);
+  }
+
+  // Add only the missing lastIndexOf that you actually need
+  int lastIndexOf(const String& str) const {
+    size_t pos = rfind(str);
     return (pos == std::string::npos) ? -1 : static_cast<int>(pos);
   }
 
@@ -112,6 +134,7 @@ class String : public std::string {
 
   // length() method (alias for size())
   size_t length() const { return size(); }
+
   void replace(char find, char replace) {
     for (size_t i = 0; i < length(); i++) {
       if ((*this)[i] == find) { (*this)[i] = replace; }
@@ -120,7 +143,6 @@ class String : public std::string {
 
   void replace(const String& find, const String& replace) {
     if (find.empty()) return;
-
     size_t pos = 0;
     while ((pos = std::string::find(find, pos)) != std::string::npos) {
       std::string::replace(pos, find.length(), replace);

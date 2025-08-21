@@ -11,6 +11,9 @@ class String : public std::string {
   template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
   explicit String(T value) : std::string(std::to_string(value)) {}
 
+  template <typename... Args>
+  String(Args&&... args) : std::string(std::forward<Args>(args)...) {}
+
   String& operator=(const char* str) {
     std::string::operator=(str);
     return *this;
@@ -154,5 +157,18 @@ class String : public std::string {
 
   void replace(const char* find, const char* replace) {
     this->replace(String(find), String(replace));
+  }
+
+  void remove(unsigned int index) {
+    if (index < length()) { erase(index, 1); }
+  }
+
+  void remove(unsigned int index, unsigned int count) {
+    if (index < length()) {
+      // Ensure we don't remove more characters than available
+      size_t available = length() - index;
+      size_t to_remove = (count > available) ? available : count;
+      erase(index, to_remove);
+    }
   }
 };

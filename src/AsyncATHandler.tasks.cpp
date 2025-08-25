@@ -20,7 +20,9 @@ void AsyncATHandler::processIncomingData() {
     lineBuffer += c;
 
     if (isLineComplete(lineBuffer)) {
-      log_d("Processing line: '%s'", lineBuffer.c_str());
+      String printable = lineBuffer;
+      printable.remove(printable.length() - 2);
+      log_d("Processing line: '%s'", printable.c_str());
       processCompleteLine(lineBuffer);
       lineBuffer = "";
     }

@@ -68,6 +68,7 @@ std::unique_ptr<ATPromise> AsyncATHandler::popCompletedPromise(uint32_t commandI
       log_d("Popped promise with ID: %u", commandId);
     }
     xSemaphoreGive(mutex);
+    log_d("Promise list size after pop: %zu", pendingPromises.size());
   }
   return promise;
 }

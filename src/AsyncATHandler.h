@@ -30,7 +30,7 @@ class AsyncATHandler {
   ATPromise* findPromiseForResponse(const String& line);
   void handleUnsolicitedResponse(const String& line);
 
-  bool isLineComplete(const String& buffer);
+  bool isLineComplete(String& buffer);
   void cleanupCompletedPromises();
 
  public:

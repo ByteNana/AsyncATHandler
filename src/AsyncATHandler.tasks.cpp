@@ -19,11 +19,7 @@ void AsyncATHandler::processIncomingData() {
     lineBuffer += c;
 
     if (isLineComplete(lineBuffer)) {
-      String printable = lineBuffer;
-      while (printable.endsWith("\r") || printable.endsWith("\n")) {
-        printable.remove(printable.length() - 1);
-      }
-      log_d("Processing line: '%s'", printable.c_str());
+      log_d("Processing line: '%s'", lineBuffer.c_str());
       processCompleteLine(lineBuffer);
       lineBuffer = "";
     }
@@ -36,8 +32,6 @@ void AsyncATHandler::processIncomingData() {
 }
 
 void AsyncATHandler::processCompleteLine(const String& line) {
-  if (line.length() < 2) { return; }
-
   ResponseType type = classifyLine(line);
 
   ResponseLine responseLine;

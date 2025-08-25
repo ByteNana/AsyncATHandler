@@ -15,7 +15,9 @@ typedef bool boolean;
 typedef uint8_t byte;
 typedef uint16_t word;
 
+#include "times.h"
 #include "WString.h"
+#include "Stream.h"
 
 inline bool isSpace(char c) { return isspace(static_cast<unsigned char>(c)); }
 
@@ -28,14 +30,6 @@ inline bool isDigit(char c) { return isdigit(static_cast<unsigned char>(c)); }
 inline bool isAlpha(char c) { return isalpha(static_cast<unsigned char>(c)); }
 
 inline bool isAlphaNumeric(char c) { return isalnum(static_cast<unsigned char>(c)); }
-
-inline unsigned long millis() {
-  static auto start = std::chrono::steady_clock::now();
-  auto now = std::chrono::steady_clock::now();
-  return std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
-}
-
-inline void delay(unsigned long ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
 
 inline void randomSeed(unsigned long seed) {
   static std::mt19937 generator;

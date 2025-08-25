@@ -7,7 +7,8 @@
 #include <queue>
 #include <string>
 
-#include "Arduino.h"
+#include "WString.h"
+#include "times.h"
 
 class Stream {
 protected:

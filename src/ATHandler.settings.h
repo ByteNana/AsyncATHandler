@@ -47,18 +47,3 @@
 #define AT_EXPECTED_RESPONSE_MAX_LENGTH 512
 #endif
 
-struct ATCommand {
-  uint32_t id;
-  char command[AT_COMMAND_MAX_LENGTH];
-  char expectedResponse[AT_EXPECTED_RESPONSE_MAX_LENGTH];
-  uint32_t timeout;
-  bool waitForResponse;
-  SemaphoreHandle_t responseSemaphore;
-};
-
-struct ATResponse {
-  uint32_t commandId;
-  char response[AT_RESPONSE_BUFFER_SIZE];
-  bool success;
-  unsigned long timestamp;
-};

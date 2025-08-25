@@ -3,69 +3,58 @@
 #include <Stream.h>
 
 #include <functional>
+#include <vector>
+#include <memory>
 
-#include "ATHandler.settings.h"
+#include "ATPromise/ATPromise.h"
+#include "ATResponse/ATResponse.h"
 #include "freertos/FreeRTOS.h"
-
-typedef std::function<void(const char *response)> UnsolicitedCallback;
 
 class AsyncATHandler {
  private:
+  Stream* stream = nullptr;
   TaskHandle_t readerTask = nullptr;
   SemaphoreHandle_t mutex = nullptr;
 
-  char responseBuffer[AT_RESPONSE_BUFFER_SIZE];
-  size_t responseBufferPos;
-  char pendingDataBuffer[AT_RESPONSE_BUFFER_SIZE];
-  size_t pendingDataPos = 0;
-  bool hasCompleteResponse = false;
+  String lineBuffer = "";
+  std::vector<std::unique_ptr<ATPromise>> pendingPromises;
+  URCCallback urcCallback = nullptr;
 
-  void extractCompleteResponse();
-  bool isResponseComplete();
-  void moveToDataBuffer();
+  uint32_t nextCommandId = 1;
 
-  static void readerTaskFunction(void *parameter);
-  void flushResponseBuffer();
+  static void readerTaskFunction(void* parameter);
   void processIncomingData();
-  bool isCompleteLineInBuffer();
-  bool addCharToBuffer(char c);
-  void handleResponse(const char *response);
-  String sanitizeResponseBuffer(const String &expectedResponse);
+  void processCompleteLine(const String& line);
 
-  int readFromBuffer();
+  ResponseType classifyLine(const String& line);
+  ATPromise* findPromiseForResponse(const String& line);
+  void handleUnsolicitedResponse(const String& line);
+
+  bool isLineComplete(const String& buffer);
+  void cleanupCompletedPromises();
 
  public:
   AsyncATHandler();
   ~AsyncATHandler();
 
-  Stream *_stream;
-  bool begin(Stream &stream);
+  bool begin(Stream& stream);
   void end();
-  int available();
+
+  ATPromise* sendCommand(const String& command);
+
   template <typename... Args>
-  void sendAT(Args... cmd);
-  int8_t waitResponseMultiple(uint32_t timeout, const char *expectedResponses[], size_t count);
-  int8_t waitResponse(uint32_t timeout = 5000);
+  ATPromise* sendCommand(Args... parts) {
+    String command = "";
+    ((command += String(parts)), ...);
+    return sendCommand(command);
+  }
 
-  template <typename FirstArg, typename... RestArgs>
-  int8_t waitResponse(FirstArg &&first, RestArgs &&...rest);
+  bool sendSync(const String& command, String& response, uint32_t timeout = 5000);
+  bool sendSync(const String& command, uint32_t timeout = 5000);
 
-  bool sendCommand(
-      const String &command, String &response, const String &expectedResponse = "OK",
-      uint32_t timeout = AT_DEFAULT_TIMEOUT);
-  bool sendCommand(
-      const String &command, const String &expectedResponse = "OK",
-      uint32_t timeout = AT_DEFAULT_TIMEOUT);
-  template <typename... Args>
-  bool sendCommand(
-      String &response, const String &expectedResponse = "OK",
-      uint32_t timeout = AT_DEFAULT_TIMEOUT, Args &&...parts);
+  std::unique_ptr<ATPromise> popCompletedPromise(uint32_t commandId);
 
-  String getResponse(const String &expectedResponse);
+  void onURC(URCCallback callback) { urcCallback = callback; }
 
-  // Re-implemented read() method to read from the internal buffer
-  int read();
-  int readData(uint8_t *buf, size_t size);
+  Stream* getStream() { return stream; }
 };
-
-#include "AsyncATHandler.tpp"

@@ -1,50 +1,59 @@
 #include "AsyncATHandler.h"
+#include <esp_log.h>
 
-#include <string.h>
+AsyncATHandler::AsyncATHandler() {}
 
-#include "esp_log.h"
-#include "freertos/FreeRTOS.h"
-
-AsyncATHandler::AsyncATHandler() { flushResponseBuffer(); }
-AsyncATHandler::~AsyncATHandler() { end(); }
-
-bool AsyncATHandler::begin(Stream &stream) {
-  if (readerTask || mutex) {
-    log_e("Reader task already started");
-    return false;
-  }
-  mutex = xSemaphoreCreateMutex();
-
-  if (!mutex) {
-    log_e("Failed to create FreeRTOS resources.");
-    end();
-    return false;
-  }
-
-  _stream = &stream;
-  flushResponseBuffer();
-  BaseType_t result = xTaskCreatePinnedToCore(
-      readerTaskFunction, "AT_Reader", AT_TASK_STACK_SIZE, this, AT_TASK_PRIORITY, &readerTask,
-      AT_TASK_CORE);
-
-  if (result == pdPASS) {
-    log_d("Reader task started successfully");
-    return true;
-  }
-
+AsyncATHandler::~AsyncATHandler() {
   end();
-  return false;
+}
+
+bool AsyncATHandler::begin(Stream& s) {
+  if (readerTask) {
+    return false;
+  }
+  stream = &s;
+
+  mutex = xSemaphoreCreateMutex();
+  if (!mutex) {
+    stream = nullptr;
+    return false;
+  }
+
+  BaseType_t result =
+      xTaskCreatePinnedToCore(readerTaskFunction, "AT_Reader", 4096, this, 2, &readerTask, 1);
+
+  if (result != pdPASS) {
+    if (mutex) {
+      vSemaphoreDelete(mutex);
+      mutex = nullptr;
+    }
+    stream = nullptr;
+    return false;
+  }
+  return true;
 }
 
 void AsyncATHandler::end() {
-  if (readerTask) {
-    vTaskDelete(readerTask);
-    readerTask = nullptr;
-  }
   if (mutex) {
-    vSemaphoreDelete(mutex);
-    mutex = nullptr;
+    if (xSemaphoreTake(mutex, pdMS_TO_TICKS(200))) {
+      pendingPromises.clear();
+      xSemaphoreGive(mutex);
+    } else {
+      log_e("Failed to acquire mutex for promise cleanup on end()");
+    }
   }
-  _stream = nullptr;
-  flushResponseBuffer();
+
+  if (readerTask) {
+    TaskHandle_t taskToDelete = readerTask;
+    readerTask = nullptr;
+    vTaskDelete(taskToDelete);
+  }
+
+  if (mutex) {
+    SemaphoreHandle_t mutexToDelete = mutex;
+    mutex = nullptr;
+    vSemaphoreDelete(mutexToDelete);
+  }
+
+  stream = nullptr;
 }

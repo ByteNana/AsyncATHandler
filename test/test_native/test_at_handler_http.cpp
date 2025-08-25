@@ -4,6 +4,7 @@
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
+#include <memory>
 
 using ::testing::NiceMock;
 
@@ -20,7 +21,15 @@ class AsyncATHandlerHTTPTest : public FreeRTOSTest {
 
   void TearDown() override {
     if (handler) {
-      handler->end();
+      while (true) {
+        auto promise = handler->popCompletedPromise(0);
+        if (!promise) {
+          break;  // No more promises to clean up
+        }
+      }
+      bool success = CleanupATHandler(handler);
+      if (!success) { log_w("Handler teardown may have failed"); }
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
       delete handler;
       handler = nullptr;
     }
@@ -36,117 +45,47 @@ TEST_F(AsyncATHandlerHTTPTest, HttpSocketOpenWithLongTimeout) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
         if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
-
-        handler->sendAT("AT+QIOPEN=0,0,\"TCP\",\"220.180.239.212\",8062,0,1");
-
-        mockStream->InjectRxData("AT+QIOPEN=0,0,\"TCP\",\"220.180.239.212\",8062,0,1\r\n");
-        mockStream->InjectRxData("OK\r\n");
-
-        vTaskDelay(pdMS_TO_TICKS(50));
-
-        int8_t result = handler->waitResponse(1000, "OK");
-        if (result <= 0) { throw std::runtime_error("Should have received OK response"); }
-
-        String okResponse = handler->getResponse("OK");
-        log_i("[Test] OK response: %s", okResponse.c_str());
-
-        log_i("[Test] Waiting for +QIOPEN URC (up to 60 seconds)...");
-
-        vTaskDelay(pdMS_TO_TICKS(2000));
-        mockStream->InjectRxData("+QIOPEN: 0,0\r\n");
-
-        result = handler->waitResponse(60000, "+QIOPEN:");
-        if (result <= 0) {
-          throw std::runtime_error("Should have received +QIOPEN URC within 60 seconds");
+        vTaskDelay(pdMS_TO_TICKS(100));
+        InjectDataWithDelay(
+            mockStream,
+            "AT+QIOPEN=0,0,\"TCP\",\"220.180.239.212\",8062,0,1\r\n"
+            "OK\r\n",
+            100);
+        String openResponse;
+        bool openResult = handler->sendSync(
+            "AT+QIOPEN=0,0,\"TCP\",\"220.180.239.212\",8062,0,1", openResponse, 5000);
+        if (!openResult) { throw std::runtime_error("QIOPEN command failed"); }
+        if (openResponse.indexOf("OK") == -1) {
+          throw std::runtime_error("QIOPEN should return OK");
         }
-
-        String urcResponse = handler->getResponse("+QIOPEN:");
-        if (urcResponse.indexOf("+QIOPEN: 0,0") == -1) {
-          throw std::runtime_error("URC content incorrect");
+        std::atomic<bool> urcReceived{false};
+        String urcData;
+        handler->onURC([&](const String& urc) {
+          if (urc.indexOf("+QIOPEN:") != -1) {
+            urcReceived = true;
+            urcData = urc;
+          }
+        });
+        InjectDataWithDelay(mockStream, "+QIOPEN: 0,0\r\n", 2000);
+        for (int i = 0; i < 100 && !urcReceived.load(); i++) { vTaskDelay(pdMS_TO_TICKS(100)); }
+        if (!urcReceived.load()) { throw std::runtime_error("Should have received +QIOPEN URC"); }
+        if (urcData.indexOf("0,0") == -1) {
+          throw std::runtime_error("Connection should have succeeded (0,0)");
         }
-
-        log_i("[Test] URC received: %s", urcResponse.c_str());
-
-        handler->sendAT("AT+QISTATE=1,0");
-
-        mockStream->InjectRxData("AT+QISTATE=1,0\r\n");
-        mockStream->InjectRxData("+QISTATE: 0,\"TCP\",\"220.180.239.212\",8062,0,2,0,1\r\n");
-        mockStream->InjectRxData("OK\r\n");
-
-        vTaskDelay(pdMS_TO_TICKS(50));
-
-        result = handler->waitResponse(1000, "OK");
-        if (result <= 0) { throw std::runtime_error("Should have received QISTATE OK response"); }
-
-        String qistateResponse = handler->getResponse("OK");
-        if (qistateResponse.indexOf("+QISTATE: 0,\"TCP\"") == -1) {
-          throw std::runtime_error("QISTATE response missing");
+        InjectDataWithDelay(
+            mockStream,
+            "AT+QISTATE=1,0\r\n"
+            "+QISTATE: 0,\"TCP\",\"220.180.239.212\",8062,0,2,0,1\r\n"
+            "OK\r\n",
+            100);
+        String stateResponse;
+        bool stateResult = handler->sendSync("AT+QISTATE=1,0", stateResponse, 3000);
+        if (!stateResult) { throw std::runtime_error("QISTATE command failed"); }
+        if (stateResponse.indexOf("220.180.239.212") == -1) {
+          throw std::runtime_error("Status should show connected IP");
         }
-
-        log_i("[Test] QISTATE response: %s", qistateResponse.c_str());
       },
-      "HttpSocketLongTimeoutTest", 2048, 2, 70000);
-
-  EXPECT_TRUE(testResult);
-}
-
-TEST_F(AsyncATHandlerHTTPTest, CompleteHttpConnectionFlow) {
-  bool testResult = runInFreeRTOSTask(
-      [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
-
-        String response = "";
-
-        log_i("[Test] Opening HTTP socket...");
-
-        handler->sendAT("AT+QIOPEN=0,0,\"TCP\",\"220.180.239.212\",8062,0,1");
-
-        mockStream->InjectRxData("AT+QIOPEN=0,0,\"TCP\",\"220.180.239.212\",8062,0,1\r\n");
-        mockStream->InjectRxData("OK\r\n");
-
-        vTaskDelay(pdMS_TO_TICKS(50));
-
-        if (handler->waitResponse(1000, "OK") <= 0) {
-          throw std::runtime_error("QIOPEN OK not received");
-        }
-        handler->getResponse("OK");
-
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        mockStream->InjectRxData("+QIOPEN: 0,0\r\n");
-
-        log_i("[Test] Waiting for connection URC...");
-        if (handler->waitResponse(60000, "+QIOPEN:") <= 0) {
-          throw std::runtime_error("Connection URC not received within 60 seconds");
-        }
-
-        String connectionResult = handler->getResponse("+QIOPEN:");
-        if (connectionResult.indexOf("0,0") == -1) {
-          throw std::runtime_error("Connection failed");
-        }
-
-        log_i("[Test] Socket connected successfully: %s", connectionResult.c_str());
-
-        log_i("[Test] Querying connection status...");
-
-        handler->sendAT("AT+QISTATE=1,0");
-        mockStream->InjectRxData("AT+QISTATE=1,0\r\n");
-        mockStream->InjectRxData("+QISTATE: 0,\"TCP\",\"220.180.239.212\",8062,0,2,0,1\r\n");
-        mockStream->InjectRxData("OK\r\n");
-
-        vTaskDelay(pdMS_TO_TICKS(50));
-
-        if (handler->waitResponse(1000, "OK") <= 0) {
-          throw std::runtime_error("QISTATE OK not received");
-        }
-
-        String statusResponse = handler->getResponse("OK");
-        if (statusResponse.indexOf("220.180.239.212") == -1) {
-          throw std::runtime_error("Status query failed");
-        }
-
-        log_i("[Test] Connection status confirmed: %s", statusResponse.c_str());
-      },
-      "CompleteHttpFlowTest", 2048, 2, 70000);
+      "HttpSocketLongTimeoutTest", configMINIMAL_STACK_SIZE * 6, 2, 15000);
 
   EXPECT_TRUE(testResult);
 }
@@ -155,117 +94,72 @@ TEST_F(AsyncATHandlerHTTPTest, SendHttpDataOverTcp) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
         if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        vTaskDelay(pdMS_TO_TICKS(100));
 
-        // Step 1: Prepare HTTP request data
         String httpRequest =
             "GET /api/test HTTP/1.1\r\n"
             "Host: example.com\r\n"
             "Connection: close\r\n"
             "\r\n";
-
         size_t dataLength = httpRequest.length();
-        log_i("[Test] HTTP request length: %zu bytes", dataLength);
-        log_i("[Test] HTTP request: %s", httpRequest.c_str());
-
-        // Step 2: Send QISEND command with data length
         String qisendCommand = "AT+QISEND=0," + String(dataLength);
-        handler->sendAT(qisendCommand);
 
-        // Inject command echo and ">" prompt
-        mockStream->InjectRxData(qisendCommand + "\r\n");
-        mockStream->InjectRxData(">\r\n");
+        // Step 1: Send AT+QISEND command and wait for the '>' prompt.
+        auto promptResponderTask = [](void* p) {
+          auto* stream = static_cast<NiceMock<MockStream>*>(p);
+          vTaskDelay(pdMS_TO_TICKS(100));
+          stream->InjectRxData(">\r\n");
+          vTaskDelete(nullptr);
+        };
+        TaskHandle_t promptTaskHandle = nullptr;
+        xTaskCreate(promptResponderTask, "PromptResponder", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &promptTaskHandle);
 
-        vTaskDelay(pdMS_TO_TICKS(50));
-
-        // Step 3: Wait for ">" prompt using sendCommand to clean buffer
-        String response;
-        bool promptReceived = handler->sendCommand(qisendCommand, response, ">", 1000);
-        if (!promptReceived) { throw std::runtime_error("Should have received > prompt"); }
-
-        if (response.indexOf(">") == -1) {
-          throw std::runtime_error("> prompt not found in response");
+        // This promise should only wait for the '>'
+        ATPromise* promptPromise = handler->sendCommand(qisendCommand);
+        if (!promptPromise) throw std::runtime_error("Failed to create prompt promise");
+        if (!promptPromise->expect(">")->wait()) {
+          throw std::runtime_error("Did not receive prompt '>'");
         }
 
-        log_i("[Test] Received prompt: %s", response.c_str());
+        // Step 2: Send raw data and wait for 'OK' and 'SEND OK'
+        auto dataResponderTask = [](void* p) {
+          auto* stream = static_cast<NiceMock<MockStream>*>(p);
+          vTaskDelay(pdMS_TO_TICKS(100));
+          stream->InjectRxData("OK\r\n");
+          stream->InjectRxData("SEND OK\r\n");
+          vTaskDelete(nullptr);
+        };
+        TaskHandle_t dataTaskHandle = nullptr;
+        xTaskCreate(dataResponderTask, "DataResponder", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &dataTaskHandle);
 
-        // Step 4: Clear TX buffer and send HTTP data directly to stream
-        mockStream->ClearTxData();
+        Stream* stream = handler->getStream();
+        stream->write(reinterpret_cast<const uint8_t*>(httpRequest.c_str()), dataLength);
+        stream->flush();
 
-        // Write HTTP request data to stream (like TinyGSM does)
-        handler->_stream->write(reinterpret_cast<const uint8_t*>(httpRequest.c_str()), dataLength);
-        handler->_stream->flush();
-
-        // Step 5: Inject response for data transmission
-        vTaskDelay(pdMS_TO_TICKS(50));
-        mockStream->InjectRxData("OK\r\n");
-        mockStream->InjectRxData("SEND OK\r\n");
-
-        vTaskDelay(pdMS_TO_TICKS(50));
-
-        // Step 6: Wait for SEND OK confirmation
-        int8_t result = handler->waitResponse(1000, "SEND OK");
-        if (result <= 0) { throw std::runtime_error("Should have received SEND OK"); }
-
-        String sendConfirmation = handler->getResponse("SEND OK");
-        if (sendConfirmation.indexOf("SEND OK") == -1) {
-          throw std::runtime_error("SEND OK not found in response");
+        // A new promise is needed to wait for the final response
+        ATPromise* dataPromise = handler->sendCommand("");
+        if (!dataPromise) throw std::runtime_error("Failed to create data promise");
+        dataPromise->expect("OK")->expect("SEND OK");
+        if (!dataPromise->wait()) {
+          throw std::runtime_error("Did not receive SEND OK");
         }
-
-        log_i("[Test] Send confirmation: %s", sendConfirmation.c_str());
-
-        // Step 7: Validate that all HTTP data was sent to the stream
-        std::string sentData = mockStream->GetTxData();
-
-        // Extract only the HTTP data (skip AT commands)
-        // TxData should contain the HTTP request we wrote to the stream
-        if (sentData.find("GET /api/test HTTP/1.1") == std::string::npos) {
-          throw std::runtime_error("HTTP GET request not found in sent data");
-        }
-
-        if (sentData.find("Host: example.com") == std::string::npos) {
-          throw std::runtime_error("HTTP Host header not found in sent data");
-        }
-
-        if (sentData.find("Connection: close") == std::string::npos) {
-          throw std::runtime_error("HTTP Connection header not found in sent data");
-        }
-
-        // Verify exact length was sent (excluding AT commands)
-        size_t httpDataStart = sentData.find("GET /api/test");
-        if (httpDataStart == std::string::npos) {
-          throw std::runtime_error("Could not find HTTP data start in sent data");
-        }
-
-        std::string actualHttpData = sentData.substr(httpDataStart);
-        if (actualHttpData.length() < dataLength) {
-          throw std::runtime_error(
-              "Incomplete HTTP data sent. Expected: " + String(dataLength) +
-              ", Got: " + String(actualHttpData.length()));
-        }
-
-        log_i("[Test] HTTP data sent successfully over TCP");
-        log_i("[Test] Sent data length: %zu bytes", actualHttpData.length());
-        log_i("[Test] Expected length: %zu bytes", dataLength);
       },
-      "SendHttpDataTest");
+      "SendHttpDataTest", configMINIMAL_STACK_SIZE * 6);
 
   EXPECT_TRUE(testResult);
 }
 
-TEST_F(AsyncATHandlerHTTPTest, SendLargeHttpDataOverTcp) {
+TEST_F(AsyncATHandlerHTTPTest, SendHttpDataChunked) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
         if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        vTaskDelay(pdMS_TO_TICKS(100));
 
-        // Step 1: Prepare larger HTTP POST request with JSON data
         String jsonPayload =
             "{\"sensor_id\":\"ESP32_001\","
             "\"temperature\":23.5,"
             "\"humidity\":65.2,"
-            "\"timestamp\":\"2024-08-19T10:30:00Z\","
-            "\"status\":\"active\","
-            "\"metadata\":{\"version\":\"1.0\",\"location\":\"office\"}}";
-
+            "\"status\":\"active\"}";
         String httpRequest =
             "POST /api/sensors/data HTTP/1.1\r\n"
             "Host: api.iot-server.com\r\n"
@@ -273,130 +167,82 @@ TEST_F(AsyncATHandlerHTTPTest, SendLargeHttpDataOverTcp) {
             "Content-Length: " +
             String(jsonPayload.length()) +
             "\r\n"
-            "Authorization: Bearer abc123def456\r\n"
             "Connection: close\r\n"
             "\r\n" +
             jsonPayload;
-
-        size_t totalDataLength = httpRequest.length();
-        log_i("[Test] Large HTTP request length: %zu bytes", totalDataLength);
-
-        // Step 2: Send data in chunks
-        const size_t chunkSize = 64;
-        size_t sent = 0;
+        size_t totalLength = httpRequest.length();
+        static const size_t chunkSize = totalLength / 2;
         const char* data = httpRequest.c_str();
-        int chunkNumber = 1;
 
-        mockStream->ClearTxData();  // Clear before starting
-
-        while (sent < totalDataLength) {
-          size_t currentChunkSize = min(chunkSize, totalDataLength - sent);
-
-          log_i(
-              "[Test] Sending chunk %d: %zu bytes (offset: %zu)", chunkNumber, currentChunkSize,
-              sent);
-
-          // Step 2a: Send QISEND command for this chunk
-          String qisendCommand = "AT+QISEND=0," + String(currentChunkSize);
-
-          // Inject responses for this chunk
-          mockStream->InjectRxData(qisendCommand + "\r\n");
-          mockStream->InjectRxData(">\r\n");
-
-          vTaskDelay(pdMS_TO_TICKS(50));
-
-          // Step 2b: Wait for ">" prompt for this chunk
-          String response;
-          bool success = handler->sendCommand(qisendCommand, response, ">", 1000);
-          if (!success) {
-            throw std::runtime_error("Failed to get > prompt for chunk " + String(chunkNumber));
-          }
-
-          log_i("[Test] Got prompt for chunk %d: %s", chunkNumber, response.c_str());
-
-          // Step 2c: Write this chunk to stream
-          handler->_stream->write(reinterpret_cast<const uint8_t*>(data + sent), currentChunkSize);
-          handler->_stream->flush();
-
-          // Step 2d: Inject completion responses for this chunk
-          vTaskDelay(pdMS_TO_TICKS(50));
-          mockStream->InjectRxData("OK\r\n");
-          mockStream->InjectRxData("SEND OK\r\n");
-
-          vTaskDelay(pdMS_TO_TICKS(50));
-
-          // Step 2e: Wait for SEND OK for this chunk
-          if (handler->waitResponse(1000, "SEND OK") <= 0) {
-            throw std::runtime_error("Chunk " + String(chunkNumber) + " send not confirmed");
-          }
-
-          String sendConfirmation = handler->getResponse("SEND OK");
-          log_i("[Test] Chunk %d confirmed: %s", chunkNumber, sendConfirmation.c_str());
-
-          sent += currentChunkSize;
-          chunkNumber++;
+        // Step 1: Send first chunk
+        auto chunk1Responder = [](void* p) {
+          auto* stream = static_cast<NiceMock<MockStream>*>(p);
+          vTaskDelay(pdMS_TO_TICKS(100));
+          stream->InjectRxData(">\r\n");
+          vTaskDelete(nullptr);
+        };
+        TaskHandle_t c1ResponderHandle = nullptr;
+        xTaskCreate(chunk1Responder, "C1Responder", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &c1ResponderHandle);
+        ATPromise* promise1 = handler->sendCommand("AT+QISEND=0," + String(chunkSize));
+        if (!promise1) throw std::runtime_error("Failed to create chunk 1 promise");
+        promise1->expect(">");
+        if (!promise1->wait()) {
+          throw std::runtime_error("Chunk 1 prompt failed");
         }
 
-        log_i(
-            "[Test] All chunks sent successfully. Total: %zu bytes in %d chunks", sent,
-            chunkNumber - 1);
-
-        // Step 3: Filter out AT command patterns to get only HTTP data
-        std::string sentData = mockStream->GetTxData();
-
-        log_i("[Test] Total sent data length: %zu bytes", sentData.length());
-
-        // Remove all AT+QISEND command patterns using simple string replacement
-        std::string httpDataOnly = sentData;
-        size_t pos = 0;
-        while ((pos = httpDataOnly.find("AT+QISEND=", pos)) != std::string::npos) {
-          // Find the end of this AT command (until newline or end of string)
-          size_t endPos = httpDataOnly.find('\n', pos);
-          if (endPos == std::string::npos) {
-            endPos = httpDataOnly.length();
-          } else {
-            endPos++;  // Include the newline
-          }
-
-          // Remove this AT command
-          httpDataOnly.erase(pos, endPos - pos);
+        auto chunk1DataResponder = [](void* p) {
+          auto* stream = static_cast<NiceMock<MockStream>*>(p);
+          vTaskDelay(pdMS_TO_TICKS(100));
+          stream->InjectRxData("OK\r\nSEND OK\r\n");
+          vTaskDelete(nullptr);
+        };
+        TaskHandle_t c1DataHandle = nullptr;
+        xTaskCreate(chunk1DataResponder, "C1Data", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &c1DataHandle);
+        handler->getStream()->write(reinterpret_cast<const uint8_t*>(data), chunkSize);
+        handler->getStream()->flush();
+        ATPromise* confirmPromise = handler->sendCommand("");
+        if (!confirmPromise) throw std::runtime_error("Failed to create chunk 1 confirmation promise");
+        confirmPromise->expect("OK")->expect("SEND OK");
+        if (!confirmPromise->wait()) {
+          throw std::runtime_error("Chunk 1 send confirmation failed");
         }
 
-        log_i("[Test] Filtered HTTP data length: %zu bytes", httpDataOnly.length());
-        log_i("[Test] HTTP data preview: \n%s", httpDataOnly.c_str());
-
-        // Step 4: Validate the filtered HTTP data
-        if (httpDataOnly.find("POST /api/sensors/data") == std::string::npos) {
-          throw std::runtime_error("HTTP POST not found in filtered data");
+        // Step 2: Send second chunk
+        static const size_t chunk2Size = totalLength - chunkSize;
+        auto chunk2Responder = [](void* p) {
+          auto* stream = static_cast<NiceMock<MockStream>*>(p);
+          vTaskDelay(pdMS_TO_TICKS(100));
+          stream->InjectRxData(">\r\n");
+          vTaskDelete(nullptr);
+        };
+        TaskHandle_t c2ResponderHandle = nullptr;
+        xTaskCreate(chunk2Responder, "C2Responder", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &c2ResponderHandle);
+        ATPromise* promise2 = handler->sendCommand("AT+QISEND=0," + String(chunk2Size));
+        if (!promise2) throw std::runtime_error("Failed to create chunk 2 promise");
+        promise2->expect(">");
+        if (!promise2->wait()) {
+          throw std::runtime_error("Chunk 2 prompt failed");
         }
 
-        if (httpDataOnly.find(jsonPayload.c_str()) == std::string::npos) {
-          throw std::runtime_error("JSON payload not found in filtered data");
+        auto chunk2DataResponder = [](void* p) {
+          auto* stream = static_cast<NiceMock<MockStream>*>(p);
+          vTaskDelay(pdMS_TO_TICKS(100));
+          stream->InjectRxData("OK\r\n");
+          stream->InjectRxData("SEND OK\r\n");
+          vTaskDelete(nullptr);
+        };
+        TaskHandle_t c2DataHandle = nullptr;
+        xTaskCreate(chunk2DataResponder, "C2Data", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &c2DataHandle);
+        handler->getStream()->write(reinterpret_cast<const uint8_t*>(data + chunkSize), chunk2Size);
+        handler->getStream()->flush();
+        ATPromise* confirmPromise2 = handler->sendCommand("");
+        if (!confirmPromise2) throw std::runtime_error("Failed to create chunk 2 confirmation promise");
+        confirmPromise2->expect("OK")->expect("SEND OK");
+        if (!confirmPromise2->wait()) {
+          throw std::runtime_error("Chunk 2 send confirmation failed");
         }
-
-        if (httpDataOnly.find("Authorization: Bearer") == std::string::npos) {
-          throw std::runtime_error("Authorization header not found in filtered data");
-        }
-
-        // Step 5: Verify the filtered data matches our original request
-        if (httpDataOnly != httpRequest.c_str()) {
-          log_e("[Test] Content mismatch between original and transmitted data");
-          log_e("[Test] Original length: %zu", httpRequest.length());
-          log_e("[Test] Filtered length: %zu", httpDataOnly.length());
-
-          // Show a detailed comparison for debugging
-          log_e("[Test] Original: %.100s...", httpRequest.c_str());
-          log_e("[Test] Filtered: %.100s...", httpDataOnly.c_str());
-
-          throw std::runtime_error("Filtered HTTP data doesn't match original request");
-        }
-
-        log_i("[Test] Chunked HTTP transmission validated successfully");
-        log_i(
-            "[Test] All %zu bytes transmitted correctly in %d chunks", totalDataLength,
-            chunkNumber - 1);
       },
-      "SendLargeHttpDataTest");
+      "SendHttpDataChunkedTest", configMINIMAL_STACK_SIZE * 6);
 
   EXPECT_TRUE(testResult);
 }

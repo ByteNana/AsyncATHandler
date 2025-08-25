@@ -29,8 +29,18 @@ ATPromise* ATPromise::timeout(uint32_t ms) {
 
 bool ATPromise::wait() {
   log_d("Promise [%u] waiting for completion with timeout %u ms", commandId, timeoutMs);
-  if (!completionSemaphore) return false;
-  return xSemaphoreTake(completionSemaphore, pdMS_TO_TICKS(timeoutMs)) == pdTRUE;
+  if (!completionSemaphore) {
+    log_e("Promise [%u] has no completion semaphore", commandId);
+    return false;
+  }
+  bool status = xSemaphoreTake(completionSemaphore, pdMS_TO_TICKS(timeoutMs)) == pdTRUE;
+  if (!status) {
+    log_w("Promise [%u] wait timed out after %u ms", commandId, timeoutMs);
+  } else {
+    log_d("Promise [%u] wait completed", commandId);
+  }
+  xSemaphoreGive(completionSemaphore);  // Allow re-waiting if needed
+  return status;
 }
 
 void ATPromise::addResponseLine(const ResponseLine& line) {

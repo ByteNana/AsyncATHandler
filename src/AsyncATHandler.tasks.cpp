@@ -1,4 +1,5 @@
 #include "AsyncATHandler.h"
+
 #include <esp_log.h>
 
 void AsyncATHandler::readerTaskFunction(void* parameter) {
@@ -11,9 +12,7 @@ void AsyncATHandler::readerTaskFunction(void* parameter) {
 }
 
 void AsyncATHandler::processIncomingData() {
-  if (!stream || !stream->available()) {
-    return;
-  }
+  if (!stream || !stream->available()) { return; }
 
   while (stream->available()) {
     char c = stream->read();
@@ -21,7 +20,9 @@ void AsyncATHandler::processIncomingData() {
 
     if (isLineComplete(lineBuffer)) {
       String printable = lineBuffer;
-      printable.remove(printable.length() - 2);
+      while (printable.endsWith("\r") || printable.endsWith("\n")) {
+        printable.remove(printable.length() - 1);
+      }
       log_d("Processing line: '%s'", printable.c_str());
       processCompleteLine(lineBuffer);
       lineBuffer = "";
@@ -35,9 +36,7 @@ void AsyncATHandler::processIncomingData() {
 }
 
 void AsyncATHandler::processCompleteLine(const String& line) {
-  if (line.length() < 2) {
-    return;
-  }
+  if (line.length() < 2) { return; }
 
   ResponseType type = classifyLine(line);
 
@@ -66,7 +65,5 @@ void AsyncATHandler::processCompleteLine(const String& line) {
 }
 
 void AsyncATHandler::handleUnsolicitedResponse(const String& line) {
-  if (urcCallback) {
-    urcCallback(line);
-  }
+  if (urcCallback) { urcCallback(line); }
 }

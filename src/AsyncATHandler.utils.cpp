@@ -29,6 +29,9 @@ ResponseType AsyncATHandler::classifyLine(const String& line) {
       trimmed.startsWith("+CEREG:") ||  // EPS registration (when unsolicited)
       trimmed.startsWith("+QIURC:") ||  // Quectel socket URC
       trimmed.startsWith("+QIOPEN:") || trimmed.startsWith("+QIRD:") ||
+      trimmed.startsWith("+QSSLOPEN:") ||
+      trimmed.startsWith("+QSSLURC:") ||
+      trimmed.startsWith("+QSSLRECV:") ||
       trimmed.startsWith("+QICLOSE")) {  // Quectel open URC
     return ResponseType::UNSOLICITED;
   }

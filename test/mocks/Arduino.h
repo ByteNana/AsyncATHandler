@@ -15,9 +15,9 @@ typedef bool boolean;
 typedef uint8_t byte;
 typedef uint16_t word;
 
-#include "times.h"
-#include "WString.h"
 #include "Stream.h"
+#include "WString.h"
+#include "times.h"
 
 inline bool isSpace(char c) { return isspace(static_cast<unsigned char>(c)); }
 

@@ -160,9 +160,7 @@ TEST_F(SequenceTest, GPRSConnectSequenceWithErrors) {
         if (!promise2) { throw std::runtime_error("Step 2 failed: Promise creation failed"); }
 
         bool waitResult = promise2->wait();
-        if (!waitResult) {
-          throw std::runtime_error("Step 2 failed: Timeout waiting for ERROR");
-        }
+        if (!waitResult) { throw std::runtime_error("Step 2 failed: Timeout waiting for ERROR"); }
 
         if (promise2->getResponse()->isSuccess()) {
           throw std::runtime_error("Step 2 failed: Command reported unexpected success");
@@ -196,9 +194,7 @@ TEST_F(SequenceTest, GPRSConnectSequenceWithTimeout) {
         ATPromise* promise2 = handler->sendCommand("AT+QICSGP=1,1,\"internet\",\"user\",\"pass\"");
         if (!promise2) { throw std::runtime_error("Step 2 failed: Promise creation failed"); }
         promise2->timeout(500);  // Set a short timeout
-        if (promise2->wait()) {
-          throw std::runtime_error("Step 2 should have timed out");
-        }
+        if (promise2->wait()) { throw std::runtime_error("Step 2 should have timed out"); }
       },
       "GPRSSequenceTimeoutTest", configMINIMAL_STACK_SIZE * 8, 2, 15000);
 

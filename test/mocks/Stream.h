@@ -11,9 +11,10 @@
 #include "times.h"
 
 class Stream {
-protected:
+ protected:
   unsigned long _startMillis;
   unsigned long _timeout;
+
  public:
   Stream(unsigned long timeout = 1000) : _startMillis(0), _timeout(timeout) {}
   virtual ~Stream() = default;

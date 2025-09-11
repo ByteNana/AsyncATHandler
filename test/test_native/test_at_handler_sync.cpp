@@ -80,9 +80,7 @@ TEST_F(AsyncATHandlerSyncTest, SendSyncCommandWithTimeout) {
 
         if (sendResult) { throw std::runtime_error("Should have timed out"); }
 
-        if (!response.empty()) {
-          throw std::runtime_error("Response should be empty on timeout");
-        }
+        if (!response.empty()) { throw std::runtime_error("Response should be empty on timeout"); }
       },
       "TimeoutTest");
 

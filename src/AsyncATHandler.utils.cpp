@@ -6,7 +6,7 @@ bool AsyncATHandler::isLineComplete(String& buffer) {
   if (buffer[0] == '>') {
     buffer.trim();
     buffer += "\r\n";  // Treat as complete line
-    return true;  // Empty line
+    return true;       // Empty line
   }
   return buffer.endsWith("\r\n");
 }
@@ -29,10 +29,8 @@ ResponseType AsyncATHandler::classifyLine(const String& line) {
       trimmed.startsWith("+CEREG:") ||  // EPS registration (when unsolicited)
       trimmed.startsWith("+QIURC:") ||  // Quectel socket URC
       trimmed.startsWith("+QIOPEN:") || trimmed.startsWith("+QIRD:") ||
-      trimmed.startsWith("+QSSLOPEN:") ||
-      trimmed.startsWith("+QSSLURC:") ||
-      trimmed.startsWith("+QSSLRECV:") ||
-      trimmed.startsWith("+QICLOSE")) {  // Quectel open URC
+      trimmed.startsWith("+QSSLOPEN:") || trimmed.startsWith("+QSSLURC:") ||
+      trimmed.startsWith("+QSSLRECV:") || trimmed.startsWith("+QICLOSE")) {  // Quectel open URC
     return ResponseType::UNSOLICITED;
   }
 

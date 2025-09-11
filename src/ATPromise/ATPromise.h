@@ -1,7 +1,8 @@
 #pragma once
 #include <Arduino.h>
-#include <vector>
+
 #include <deque>
+#include <vector>
 
 #include "../ATResponse/ATResponse.h"
 #include "freertos/FreeRTOS.h"

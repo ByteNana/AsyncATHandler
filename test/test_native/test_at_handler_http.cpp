@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
 
+#include <memory>
+
 #include "AsyncATHandler.h"
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
-#include <memory>
 
 using ::testing::NiceMock;
 
@@ -112,7 +113,9 @@ TEST_F(AsyncATHandlerHTTPTest, SendHttpDataOverTcp) {
           vTaskDelete(nullptr);
         };
         TaskHandle_t promptTaskHandle = nullptr;
-        xTaskCreate(promptResponderTask, "PromptResponder", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &promptTaskHandle);
+        xTaskCreate(
+            promptResponderTask, "PromptResponder", configMINIMAL_STACK_SIZE * 2, mockStream, 1,
+            &promptTaskHandle);
 
         // This promise should only wait for the '>'
         ATPromise* promptPromise = handler->sendCommand(qisendCommand);
@@ -130,7 +133,9 @@ TEST_F(AsyncATHandlerHTTPTest, SendHttpDataOverTcp) {
           vTaskDelete(nullptr);
         };
         TaskHandle_t dataTaskHandle = nullptr;
-        xTaskCreate(dataResponderTask, "DataResponder", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &dataTaskHandle);
+        xTaskCreate(
+            dataResponderTask, "DataResponder", configMINIMAL_STACK_SIZE * 2, mockStream, 1,
+            &dataTaskHandle);
 
         Stream* stream = handler->getStream();
         stream->write(reinterpret_cast<const uint8_t*>(httpRequest.c_str()), dataLength);
@@ -140,9 +145,7 @@ TEST_F(AsyncATHandlerHTTPTest, SendHttpDataOverTcp) {
         ATPromise* dataPromise = handler->sendCommand("");
         if (!dataPromise) throw std::runtime_error("Failed to create data promise");
         dataPromise->expect("OK")->expect("SEND OK");
-        if (!dataPromise->wait()) {
-          throw std::runtime_error("Did not receive SEND OK");
-        }
+        if (!dataPromise->wait()) { throw std::runtime_error("Did not receive SEND OK"); }
       },
       "SendHttpDataTest", configMINIMAL_STACK_SIZE * 6);
 
@@ -182,13 +185,13 @@ TEST_F(AsyncATHandlerHTTPTest, SendHttpDataChunked) {
           vTaskDelete(nullptr);
         };
         TaskHandle_t c1ResponderHandle = nullptr;
-        xTaskCreate(chunk1Responder, "C1Responder", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &c1ResponderHandle);
+        xTaskCreate(
+            chunk1Responder, "C1Responder", configMINIMAL_STACK_SIZE * 2, mockStream, 1,
+            &c1ResponderHandle);
         ATPromise* promise1 = handler->sendCommand("AT+QISEND=0," + String(chunkSize));
         if (!promise1) throw std::runtime_error("Failed to create chunk 1 promise");
         promise1->expect(">");
-        if (!promise1->wait()) {
-          throw std::runtime_error("Chunk 1 prompt failed");
-        }
+        if (!promise1->wait()) { throw std::runtime_error("Chunk 1 prompt failed"); }
 
         auto chunk1DataResponder = [](void* p) {
           auto* stream = static_cast<NiceMock<MockStream>*>(p);
@@ -197,11 +200,14 @@ TEST_F(AsyncATHandlerHTTPTest, SendHttpDataChunked) {
           vTaskDelete(nullptr);
         };
         TaskHandle_t c1DataHandle = nullptr;
-        xTaskCreate(chunk1DataResponder, "C1Data", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &c1DataHandle);
+        xTaskCreate(
+            chunk1DataResponder, "C1Data", configMINIMAL_STACK_SIZE * 2, mockStream, 1,
+            &c1DataHandle);
         handler->getStream()->write(reinterpret_cast<const uint8_t*>(data), chunkSize);
         handler->getStream()->flush();
         ATPromise* confirmPromise = handler->sendCommand("");
-        if (!confirmPromise) throw std::runtime_error("Failed to create chunk 1 confirmation promise");
+        if (!confirmPromise)
+          throw std::runtime_error("Failed to create chunk 1 confirmation promise");
         confirmPromise->expect("OK")->expect("SEND OK");
         if (!confirmPromise->wait()) {
           throw std::runtime_error("Chunk 1 send confirmation failed");
@@ -216,13 +222,13 @@ TEST_F(AsyncATHandlerHTTPTest, SendHttpDataChunked) {
           vTaskDelete(nullptr);
         };
         TaskHandle_t c2ResponderHandle = nullptr;
-        xTaskCreate(chunk2Responder, "C2Responder", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &c2ResponderHandle);
+        xTaskCreate(
+            chunk2Responder, "C2Responder", configMINIMAL_STACK_SIZE * 2, mockStream, 1,
+            &c2ResponderHandle);
         ATPromise* promise2 = handler->sendCommand("AT+QISEND=0," + String(chunk2Size));
         if (!promise2) throw std::runtime_error("Failed to create chunk 2 promise");
         promise2->expect(">");
-        if (!promise2->wait()) {
-          throw std::runtime_error("Chunk 2 prompt failed");
-        }
+        if (!promise2->wait()) { throw std::runtime_error("Chunk 2 prompt failed"); }
 
         auto chunk2DataResponder = [](void* p) {
           auto* stream = static_cast<NiceMock<MockStream>*>(p);
@@ -232,11 +238,14 @@ TEST_F(AsyncATHandlerHTTPTest, SendHttpDataChunked) {
           vTaskDelete(nullptr);
         };
         TaskHandle_t c2DataHandle = nullptr;
-        xTaskCreate(chunk2DataResponder, "C2Data", configMINIMAL_STACK_SIZE * 2, mockStream, 1, &c2DataHandle);
+        xTaskCreate(
+            chunk2DataResponder, "C2Data", configMINIMAL_STACK_SIZE * 2, mockStream, 1,
+            &c2DataHandle);
         handler->getStream()->write(reinterpret_cast<const uint8_t*>(data + chunkSize), chunk2Size);
         handler->getStream()->flush();
         ATPromise* confirmPromise2 = handler->sendCommand("");
-        if (!confirmPromise2) throw std::runtime_error("Failed to create chunk 2 confirmation promise");
+        if (!confirmPromise2)
+          throw std::runtime_error("Failed to create chunk 2 confirmation promise");
         confirmPromise2->expect("OK")->expect("SEND OK");
         if (!confirmPromise2->wait()) {
           throw std::runtime_error("Chunk 2 send confirmation failed");

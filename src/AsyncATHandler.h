@@ -3,8 +3,8 @@
 #include <Stream.h>
 
 #include <functional>
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "ATPromise/ATPromise.h"
 #include "ATResponse/ATResponse.h"

@@ -102,18 +102,12 @@ TEST_F(AsyncATHandlerPromiseTest, PromiseWithResponse) {
         if (!promise) { throw std::runtime_error("Failed to create promise"); }
 
         bool waitResult = promise->wait();
-        if (!waitResult) {
-          throw std::runtime_error("Promise timed out");
-        }
+        if (!waitResult) { throw std::runtime_error("Promise timed out"); }
 
         ATResponse* response = promise->getResponse();
-        if (!response) {
-          throw std::runtime_error("No response object");
-        }
+        if (!response) { throw std::runtime_error("No response object"); }
 
-        if (!response->isSuccess()) {
-          throw std::runtime_error("Command should have succeeded");
-        }
+        if (!response->isSuccess()) { throw std::runtime_error("Command should have succeeded"); }
 
         String fullResponse = response->getFullResponse();
         if (fullResponse.indexOf("OK") == -1) {
@@ -160,14 +154,10 @@ TEST_F(AsyncATHandlerPromiseTest, MultiplePromises) {
         if (!promise1) throw std::runtime_error("Failed to create promise1");
 
         ATPromise* promise2 = handler->sendCommand("AT+TEST2");
-        if (!promise2) {
-          throw std::runtime_error("Failed to create promise2");
-        }
+        if (!promise2) { throw std::runtime_error("Failed to create promise2"); }
 
         ATPromise* promise3 = handler->sendCommand("AT+TEST3");
-        if (!promise3) {
-          throw std::runtime_error("Failed to create promise3");
-        }
+        if (!promise3) { throw std::runtime_error("Failed to create promise3"); }
 
         auto p3 = handler->popCompletedPromise(promise3->getId());
         if (!p3) throw std::runtime_error("Failed to pop promise3");

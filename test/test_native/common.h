@@ -5,14 +5,14 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
-#include <thread>
 #include <string>
+#include <thread>
 
 #include "AsyncATHandler.h"
 #include "FreeRTOSConfig.h"
 #include "Stream.h"
-#include "freertos/FreeRTOS.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
 
 class GlobalSchedulerEnvironment : public ::testing::Environment {
  private:
@@ -104,7 +104,8 @@ class FreeRTOSTest : public ::testing::Test {
 };
 
 // Common responder task pattern used across multiple AT handler tests
-inline void InjectDataWithDelay(class MockStream* mockStream, const std::string& data, uint32_t delayMs = 50) {
+inline void InjectDataWithDelay(
+    class MockStream* mockStream, const std::string& data, uint32_t delayMs = 50) {
   struct InjectorData {
     MockStream* stream;
     std::string data;
@@ -122,7 +123,8 @@ inline void InjectDataWithDelay(class MockStream* mockStream, const std::string&
   };
 
   TaskHandle_t injectorHandle = nullptr;
-  xTaskCreate(injectorTask, "InjectorTask", configMINIMAL_STACK_SIZE * 2, injectorData, 1, &injectorHandle);
+  xTaskCreate(
+      injectorTask, "InjectorTask", configMINIMAL_STACK_SIZE * 2, injectorData, 1, &injectorHandle);
 }
 
 // Common teardown pattern for AT handler tests

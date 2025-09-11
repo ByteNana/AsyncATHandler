@@ -4,8 +4,8 @@
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <memory>  // FIX: Add memory header
 #include <thread>
-#include <memory> // FIX: Add memory header
 
 #include "AsyncATHandler.h"
 #include "Stream.h"
@@ -119,9 +119,7 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
         std::string sentData = mockStream->GetTxData();
         log_i("[Response] Sent data: '%s'", sentData.c_str());
 
-        if (!waitResult) {
-          throw std::runtime_error("Promise timed out");
-        }
+        if (!waitResult) { throw std::runtime_error("Promise timed out"); }
 
         ATResponse* response_obj = promise->getResponse();
         if (!response_obj->isSuccess()) {
@@ -141,9 +139,7 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
 
         // FIX: Safely pop the promise
         auto p = handler->popCompletedPromise(promise->getId());
-        if (!p) {
-            throw std::runtime_error("Failed to pop completed promise");
-        }
+        if (!p) { throw std::runtime_error("Failed to pop completed promise"); }
         log_i("[Test] Variadic template test passed: sendCommand(\"AT+\", \"VAR\")");
       },
       "VariadicTest", configMINIMAL_STACK_SIZE * 4);

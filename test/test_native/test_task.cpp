@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
+
 #include <atomic>
 #include <chrono>
 #include <iostream>
+
 #include "FreeRTOSConfig.h"
 #include "common.h"
 #include "esp_log.h"
@@ -72,15 +74,12 @@ TEST_F(TaskTest, ExternalTaskDeletion) {
     (*counter)++;
 
     // Infinite loop - this task won't self-delete
-    while (true) {
-      vTaskDelay(pdMS_TO_TICKS(10));
-    }
+    while (true) { vTaskDelay(pdMS_TO_TICKS(10)); }
   };
 
   TaskHandle_t taskHandle = nullptr;
   BaseType_t result = xTaskCreate(
-      infiniteTask, "InfiniteTask", configMINIMAL_STACK_SIZE * 2,
-      &taskRunning, 1, &taskHandle);
+      infiniteTask, "InfiniteTask", configMINIMAL_STACK_SIZE * 2, &taskRunning, 1, &taskHandle);
 
   ASSERT_EQ(result, pdPASS) << "Failed to create infinite task";
   ASSERT_NE(taskHandle, nullptr) << "Task handle is nullptr";

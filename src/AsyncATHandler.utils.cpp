@@ -30,6 +30,7 @@ ResponseType AsyncATHandler::classifyLine(const String& line) {
       trimmed.startsWith("+QIURC:") ||    // Quectel socket URC
       trimmed.startsWith("+QMTRECV:") ||  // Quectel MQTT receive URC
       trimmed.startsWith("+QIOPEN:") || trimmed.startsWith("+QIRD:") ||
+      trimmed.startsWith("+QMTSTAT:") ||  // Quectel MQTT status URC
       trimmed.startsWith("+QSSLOPEN:") || trimmed.startsWith("+QSSLURC:") ||
       trimmed.startsWith("+QSSLRECV:") || trimmed.startsWith("+QICLOSE")) {  // Quectel open URC
     return ResponseType::UNSOLICITED;

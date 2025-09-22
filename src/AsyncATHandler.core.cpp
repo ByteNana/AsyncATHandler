@@ -11,6 +11,7 @@ bool AsyncATHandler::begin(Stream& s) {
   stream = &s;
 
   mutex = xSemaphoreCreateMutex();
+  generalMutex = xSemaphoreCreateMutex();
   if (!mutex) {
     stream = nullptr;
     return false;

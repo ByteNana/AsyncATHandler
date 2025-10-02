@@ -3,8 +3,8 @@
 #include <Stream.h>
 
 #include <functional>
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "ATPromise/ATPromise.h"
 #include "ATResponse/ATResponse.h"
@@ -15,6 +15,17 @@ class AsyncATHandler {
   Stream* stream = nullptr;
   TaskHandle_t readerTask = nullptr;
   SemaphoreHandle_t mutex = nullptr;
+  SemaphoreHandle_t generalMutex = nullptr;
+
+  void lock() {
+    configASSERT(generalMutex);
+    xSemaphoreTake(generalMutex, portMAX_DELAY);
+  }
+
+  void unlock() {
+    configASSERT(generalMutex);
+    xSemaphoreGive(generalMutex);
+  }
 
   String lineBuffer = "";
   std::vector<std::unique_ptr<ATPromise>> pendingPromises;
@@ -30,7 +41,7 @@ class AsyncATHandler {
   ATPromise* findPromiseForResponse(const String& line);
   void handleUnsolicitedResponse(const String& line);
 
-  bool isLineComplete(const String& buffer);
+  bool isLineComplete(String& buffer);
   void cleanupCompletedPromises();
 
  public:

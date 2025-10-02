@@ -146,10 +146,8 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
 
 // Simplified test to isolate the issue
 TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
-
   bool testResult = runInFreeRTOSTask(
       [this]() {
-
         if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
 
         // Just wait a bit

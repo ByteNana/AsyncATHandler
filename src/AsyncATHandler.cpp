@@ -1,11 +1,12 @@
 #include "AsyncATHandler.h"
+
 #include <esp_log.h>
+
 #include <algorithm>
 
 ATPromise* AsyncATHandler::sendCommand(const String& command) {
-  if (!stream || !mutex) {
-    return nullptr;
-  }
+  if (!stream || !mutex) { return nullptr; }
+  lock();
 
   uint32_t id = nextCommandId++;
   auto promise = std::make_unique<ATPromise>(id);
@@ -18,17 +19,18 @@ ATPromise* AsyncATHandler::sendCommand(const String& command) {
     stream->print(command);
     stream->print("\r\n");
     stream->flush();
+    unlock();
     return rawPromise;
   }
   log_e("Failed to acquire mutex for sendCommand");
+  unlock();
   return nullptr;
 }
 
 bool AsyncATHandler::sendSync(const String& command, String& response, uint32_t timeout) {
   ATPromise* promise = sendCommand(command);
-  if (!promise) {
-    return false;
-  }
+  if (!promise) { return false; }
+  lock();
 
   promise->timeout(timeout);
   log_i("Waiting for promise [%u] with timeout %u ms", promise->getId(), timeout);
@@ -47,6 +49,7 @@ bool AsyncATHandler::sendSync(const String& command, String& response, uint32_t 
   if (!completedPromise) {
     log_w("Failed to pop completed promise [%u] from list", promise->getId());
   }
+  unlock();
   return success;
 }
 
@@ -58,10 +61,9 @@ bool AsyncATHandler::sendSync(const String& command, uint32_t timeout) {
 std::unique_ptr<ATPromise> AsyncATHandler::popCompletedPromise(uint32_t commandId) {
   std::unique_ptr<ATPromise> promise = nullptr;
   if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100))) {
-    auto it = std::find_if(pendingPromises.begin(), pendingPromises.end(),
-                           [commandId](const std::unique_ptr<ATPromise>& p) {
-                             return p && p->getId() == commandId;
-                           });
+    auto it = std::find_if(
+        pendingPromises.begin(), pendingPromises.end(),
+        [commandId](const std::unique_ptr<ATPromise>& p) { return p && p->getId() == commandId; });
     if (it != pendingPromises.end()) {
       promise = std::move(*it);
       pendingPromises.erase(it);

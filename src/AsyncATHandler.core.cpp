@@ -1,19 +1,17 @@
 #include "AsyncATHandler.h"
+
 #include <esp_log.h>
 
 AsyncATHandler::AsyncATHandler() {}
 
-AsyncATHandler::~AsyncATHandler() {
-  end();
-}
+AsyncATHandler::~AsyncATHandler() { end(); }
 
 bool AsyncATHandler::begin(Stream& s) {
-  if (readerTask) {
-    return false;
-  }
+  if (readerTask) { return false; }
   stream = &s;
 
   mutex = xSemaphoreCreateMutex();
+  generalMutex = xSemaphoreCreateMutex();
   if (!mutex) {
     stream = nullptr;
     return false;

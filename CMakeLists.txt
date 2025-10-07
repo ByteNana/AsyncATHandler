@@ -52,7 +52,7 @@ FetchContent_MakeAvailable(Unity)
 # Create FreeRTOS-Sim library from source files
 file(GLOB_RECURSE FREERTOS_SIM_SOURCES
   ${freertos_sim_SOURCE_DIR}/Source/*.c
-  ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/Posix/*.c
+  ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/POSIX/*.c
   ${freertos_sim_SOURCE_DIR}/Source/portable/MemMang/heap_4.c
 )
 
@@ -66,8 +66,8 @@ add_library(FreeRTOS_Sim_Lib STATIC ${FREERTOS_SIM_SOURCES})
 # Set FreeRTOS-Sim include directories
 target_include_directories(FreeRTOS_Sim_Lib PUBLIC
   ${freertos_sim_SOURCE_DIR}/Source/include
-  ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/Posix
-  ${TEST_DIR}/freertos/FreeRTOSConfig.h
+  ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/POSIX
+  ${MOCK_INC_DIR}/freertos
   ${freertos_sim_SOURCE_DIR}
 )
 
@@ -86,7 +86,7 @@ include_directories(
   ${MOCK_INC_DIR}
   ${LIB_SRC_DIR}
   ${freertos_sim_SOURCE_DIR}/Source/include
-  ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/Posix
+  ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/POSIX
   ${MOCK_INC_DIR}/freertos
   ${freertos_sim_SOURCE_DIR}
   ${gmock_SOURCE_DIR}/include

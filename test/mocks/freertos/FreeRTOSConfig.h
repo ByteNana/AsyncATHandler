@@ -16,9 +16,8 @@
 #define configUSE_PREEMPTION 1
 #define configUSE_IDLE_HOOK 1
 #define configUSE_TICK_HOOK 1
-#define configTICK_RATE_HZ ((portTickType)1000)
-#define configMINIMAL_STACK_SIZE \
-  ((unsigned portSHORT)64) /* This can be made smaller if required. */
+#define configTICK_RATE_HZ (1000u)
+#define configMINIMAL_STACK_SIZE (128u)
 #define configTOTAL_HEAP_SIZE ((size_t)(64 * 1024))
 #define configMAX_TASK_NAME_LEN (16)
 #define configUSE_TRACE_FACILITY 0
@@ -69,7 +68,14 @@ functions anyway. */
 
 /* It is a good idea to define configASSERT() while developing.  configASSERT()
 uses the same semantics as the standard C assert() macro. */
-extern void vAssertCalled(unsigned long ulLine, const char* const pcFileName);
+// Ensure C linkage for assert hook when included in C++
+#ifdef __cplusplus
+extern "C" {
+#endif
+void vAssertCalled(unsigned long ulLine, const char* const pcFileName);
+#ifdef __cplusplus
+}
+#endif
 #define configASSERT(x) \
   if ((x) == 0) vAssertCalled(__LINE__, __FILE__)
 

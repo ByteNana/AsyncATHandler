@@ -1,12 +1,10 @@
 #pragma once
 
-#include <FreeRTOS.h>
-
 #include "FreeRTOSConfig.h"
 #include "projdefs.h"
-#include "queue.h"
-#include "semphr.h"
-#include "task.h"
+#include "queue/queue.h"
+#include "semaphore/semphore.h"
+#include "task/task.h"
 
 inline BaseType_t xTaskCreatePinnedToCore(
     TaskFunction_t pxTaskCode, const char* const pcName, const portSTACK_TYPE usStackDepth,

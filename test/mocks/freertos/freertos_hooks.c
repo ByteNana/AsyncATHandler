@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "FreeRTOS.h"
-#include "task.h"
 
 void vApplicationIdleHook(void) {}
 

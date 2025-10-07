@@ -5,10 +5,7 @@
 #include <cstring>
 #include <random>
 #include <thread>
-
-// Arduino-specific functions
-#define min(a, b) std::min(a, b)
-#define max(a, b) std::max(a, b)
+#include <algorithm>
 
 // Arduino type definitions
 typedef bool boolean;

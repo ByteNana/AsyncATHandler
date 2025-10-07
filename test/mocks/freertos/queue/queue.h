@@ -21,4 +21,3 @@ UBaseType_t uxQueueMessagesWaiting(QueueHandle_t xQueue);
 #ifdef __cplusplus
 }
 #endif
-

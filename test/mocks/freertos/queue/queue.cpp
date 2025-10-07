@@ -1,10 +1,10 @@
 #include "queue.h"
 
 #include <condition_variable>
+#include <cstring>
 #include <deque>
 #include <mutex>
 #include <vector>
-#include <cstring>
 
 struct QueueControlBlock {
   std::mutex mtx;

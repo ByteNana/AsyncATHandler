@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include "projdefs.h"
 
@@ -15,7 +15,7 @@ typedef struct TaskControlBlock* TaskHandle_t;
 
 // Priorities
 #ifndef tskIDLE_PRIORITY
-#  define tskIDLE_PRIORITY 0
+#define tskIDLE_PRIORITY 0
 #endif
 
 // API

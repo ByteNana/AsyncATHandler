@@ -1,7 +1,7 @@
-#include "semphore.h"
-
 #include <condition_variable>
 #include <mutex>
+
+#include "semphore.h"
 
 struct SemaphoreControlBlock {
   std::mutex mtx;

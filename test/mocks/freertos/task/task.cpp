@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+
 #include "times.h"
 
 namespace {
@@ -82,9 +83,8 @@ void vTaskDelay(const TickType_t xTicksToDelay) {
     if (impl->cancel.load()) throw TaskExitException();
     return;
   }
-  impl->cv.wait_for(lk, std::chrono::milliseconds(xTicksToDelay), [impl]() {
-    return impl->cancel.load();
-  });
+  impl->cv.wait_for(
+      lk, std::chrono::milliseconds(xTicksToDelay), [impl]() { return impl->cancel.load(); });
   if (impl->cancel.load()) throw TaskExitException();
 }
 

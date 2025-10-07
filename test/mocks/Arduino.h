@@ -1,11 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <random>
 #include <thread>
-#include <algorithm>
 
 // Arduino type definitions
 typedef bool boolean;

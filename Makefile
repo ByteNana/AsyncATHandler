@@ -36,11 +36,11 @@ test: build
 
 esp32:
 	@echo "🔨 Building for ESP32..."
-	pio ci  examples/basic/src/main.cpp --lib="." --board=esp32dev
+	pio ci  test/test_hardware/src/main.cpp --lib="." --board=esp32dev
 
 esp32-test: esp32
 	@echo "🚀 Flashing hardware test"
-	pio test -d examples/basic
+	pio test -d test/test_hardware
 
 clean:
 	@echo "🧹 Cleaning up..."

@@ -23,14 +23,6 @@ message(STATUS "🔧 Building with mock Arduino/FreeRTOS headers")
 include(FetchContent)
 cmake_policy(SET CMP0135 NEW)
 
-# --- FreeRTOS-Sim ---
-FetchContent_Declare(
-  FreeRTOS_Sim
-  GIT_REPOSITORY https://github.com/Nathan-ma/FreeRTOS-Sim
-  GIT_TAG macos/v9.0.0
-)
-FetchContent_MakeAvailable(FreeRTOS_Sim)
-
 # --- GoogleTest/GoogleMock ---
 FetchContent_Declare(
   googletest
@@ -48,36 +40,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Unity)
 
-# === FREERTOS-SIM LIBRARY ===
-# Create FreeRTOS-Sim library from source files
-file(GLOB_RECURSE FREERTOS_SIM_SOURCES
-  ${freertos_sim_SOURCE_DIR}/Source/*.c
-  ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/Posix/*.c
-  ${freertos_sim_SOURCE_DIR}/Source/portable/MemMang/heap_4.c
+# === LOCAL FREERTOS SHIM (no network) ===
+file(GLOB FREERTOS_SHIM_SOURCES
+  ${TEST_DIR}/mocks/freertos/*.cpp
+  ${TEST_DIR}/mocks/freertos/*.c
 )
 
-# Remove main.c if it exists to avoid conflicts
-list(FILTER FREERTOS_SIM_SOURCES EXCLUDE REGEX ".*main\\.c$")
-# Exclude heap_1.c as we are using heap_4.c
-list(FILTER FREERTOS_SIM_SOURCES EXCLUDE REGEX ".*heap_1\\.c$")
+add_library(FreeRTOS_Sim_Lib STATIC ${FREERTOS_SHIM_SOURCES})
 
-add_library(FreeRTOS_Sim_Lib STATIC ${FREERTOS_SIM_SOURCES})
-
-# Set FreeRTOS-Sim include directories
 target_include_directories(FreeRTOS_Sim_Lib PUBLIC
-  ${freertos_sim_SOURCE_DIR}/Source/include
-  ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/Posix
-  ${TEST_DIR}/freertos/FreeRTOSConfig.h
-  ${freertos_sim_SOURCE_DIR}
+  ${MOCK_INC_DIR}
+  ${MOCK_INC_DIR}/freertos
 )
 
-# Add compiler definitions for FreeRTOS-Sim
-target_compile_definitions(FreeRTOS_Sim_Lib PUBLIC
-  -DprojCOVERAGE_TEST=0
-  -DRUN_TIME_STATS_GATHERING=0
-)
-
-# Link pthread for POSIX port
 find_package(Threads REQUIRED)
 target_link_libraries(FreeRTOS_Sim_Lib PUBLIC Threads::Threads)
 
@@ -85,10 +60,7 @@ target_link_libraries(FreeRTOS_Sim_Lib PUBLIC Threads::Threads)
 include_directories(
   ${MOCK_INC_DIR}
   ${LIB_SRC_DIR}
-  ${freertos_sim_SOURCE_DIR}/Source/include
-  ${freertos_sim_SOURCE_DIR}/Source/portable/GCC/Posix
   ${MOCK_INC_DIR}/freertos
-  ${freertos_sim_SOURCE_DIR}
   ${gmock_SOURCE_DIR}/include
   ${gtest_SOURCE_DIR}/include
   ${Unity_SOURCE_DIR}/src

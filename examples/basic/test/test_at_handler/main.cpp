@@ -19,7 +19,7 @@ void test_at_command_success() {
   mockSerial.mockResponse("AT\r\nOK\r\n");
 
   String response;
-  bool ok = handler.sendCommand("AT", response, "OK", 1000);
+  bool ok = handler.sendSync("AT", response, 1000);
 
   TEST_ASSERT_EQUAL_STRING("AT\r\n", mockSerial.getSentData().c_str());
   TEST_ASSERT_TRUE(ok);
@@ -34,7 +34,7 @@ void test_at_command_timeout() {
   mockSerial.mockResponse("");
 
   String response;
-  bool ok = handler.sendCommand("AT", response, "OK", 500);
+  bool ok = handler.sendSync("AT", response, 500);
 
   TEST_ASSERT_EQUAL_STRING("AT\r\n", mockSerial.getSentData().c_str());
   TEST_ASSERT_FALSE(ok);
@@ -48,7 +48,7 @@ void test_at_command_error() {
   mockSerial.mockResponse("AT\r\nERROR\r\n");
 
   String response;
-  bool ok = handler.sendCommand("AT", response, "OK", 1000);
+  bool ok = handler.sendSync("AT", response, 1000);
 
   TEST_ASSERT_EQUAL_STRING("AT\r\n", mockSerial.getSentData().c_str());
   TEST_ASSERT_FALSE(ok);
@@ -65,11 +65,11 @@ void test_gprs_connect_sequence() {
   String response;
   bool ok = true;
 
-  ok &= handler.sendCommand("AT+QIDEACT=1", response, "OK", 2000);
-  ok &= handler.sendCommand(
-      response, "OK", 5000, "AT+QICSGP=1,1,\"", "internet", "\",\"user\",\"pass\"");
-  ok &= handler.sendCommand("AT+QIACT=1", response, "OK", 150000);
-  ok &= handler.sendCommand("AT+CGATT=1", response, "OK", 60000);
+  ok &= handler.sendSync("AT+QIDEACT=1", response, 2000);
+  String cmdQICSGP = String("AT+QICSGP=1,1,\"") + "internet" + "\",\"user\",\"pass\"";
+  ok &= handler.sendSync(cmdQICSGP, response, 5000);
+  ok &= handler.sendSync("AT+QIACT=1", response, 150000);
+  ok &= handler.sendSync("AT+CGATT=1", response, 60000);
 
   String expected =
       "AT+QIDEACT=1\r\n"

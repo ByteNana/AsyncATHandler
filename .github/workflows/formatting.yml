@@ -1,0 +1,43 @@
+name: Formatting Check
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ 'rc-*' , 'master' ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          apt-get update -y && apt-get install python3-pip -y
+          pip install clang-format==20.1.8
+          echo "clang-format version: $(clang-format --version)"
+
+      - name: Check code formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf "\n\033[1;33m🔍 Checking formatting\033[0m\n\n"
+
+          # Run clang-format in check mode; fail if changes would be made.
+          if git ls-files -z '*.cpp' '*.h'| \
+            xargs -0 -r clang-format --dry-run --Werror >/dev/null 2>&1; then
+            printf "\033[1;32m✔ All files passed\033[0m\n"
+          else
+            printf "\033[1;31m✘ Formatting issues detected\033[0m\n"
+            # Show verbose which files are affected
+            git ls-files -z '*.cpp' '*.h'| \
+              xargs -0 -r clang-format --dry-run --Werror --verbose |& \
+              awk '{
+                gsub(/Formatting/, "\033[1;34mChecking\033[0m");   # blue
+                gsub(/error:/,     "\033[1;31merror:\033[0m");     # red
+                print
+              }'
+            exit 1
+          fi
+

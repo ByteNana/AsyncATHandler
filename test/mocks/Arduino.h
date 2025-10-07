@@ -1,14 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <random>
 #include <thread>
-
-// Arduino-specific functions
-#define min(a, b) std::min(a, b)
-#define max(a, b) std::max(a, b)
 
 // Arduino type definitions
 typedef bool boolean;

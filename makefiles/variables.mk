@@ -25,6 +25,8 @@ LOG_LEVEL := $(if $(LOG_LEVEL_ARG),$(LOG_LEVEL_ARG),3)
 # Make Configuration
 # ==============================================================================
 
+# Discover all example projects (directories containing platformio.ini)
+EXAMPLE_DIRS := $(shell find examples -mindepth 1 -maxdepth 1 -type d -exec sh -c 'test -f "$$1/platformio.ini" && echo "$$1"' _ {} \;)
 
 # Suppress recursive make directory noise
 MAKEFLAGS += --no-print-directory

@@ -10,6 +10,7 @@ set(CMAKE_BUILD_TYPE Debug)
 # Config flag to differentiate between embedded vs native build
 option(NATIVE_BUILD "Use mock Arduino headers for native testing" ON)
 option(ASYNCAT_HANDLER_BUILD_TESTS "Build tests" ON)
+option(CLANGD_INDEX_EXAMPLES "Add example sources to compile_commands.json" ON)
 
 # Paths
 set(LIB_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -122,5 +123,29 @@ if(ASYNCAT_HANDLER_BUILD_TESTS)
     )
 
     add_test(NAME ${EXEC_NAME} COMMAND ${EXEC_NAME})
+  endforeach()
+endif()
+
+# === CLANGD: index example sources without building ===
+if(CLANGD_INDEX_EXAMPLES)
+  file(GLOB_RECURSE EXAMPLE_MAIN_SOURCES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/examples/*/src/*.cpp
+  )
+
+  foreach(EX_FILE ${EXAMPLE_MAIN_SOURCES})
+    # Derive a readable target name from examples/<name>
+    get_filename_component(_src_dir ${EX_FILE} DIRECTORY)
+    get_filename_component(_example_dir ${_src_dir} DIRECTORY)
+    get_filename_component(_example_name ${_example_dir} NAME)
+    set(TGT clangd_example_${_example_name})
+
+    # OBJECT + EXCLUDE_FROM_ALL ensures entries in compile_commands.json without adding build targets
+    add_library(${TGT} OBJECT EXCLUDE_FROM_ALL ${EX_FILE})
+    target_include_directories(${TGT} PRIVATE
+      ${LIB_SRC_DIR}
+      ${MOCK_INC_DIR}
+      ${MOCK_INC_DIR}/freertos
+    )
+    target_compile_definitions(${TGT} PRIVATE LOG_LEVEL=${LOG_LEVEL})
   endforeach()
 endif()

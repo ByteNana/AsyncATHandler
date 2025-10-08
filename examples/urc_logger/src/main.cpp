@@ -1,4 +1,5 @@
 #include <Arduino.h>
+
 #include "AsyncATHandler.h"
 
 AsyncATHandler handler;
@@ -30,7 +31,4 @@ void setup() {
   Serial.println("URC logger ready. Waiting for unsolicited messages...");
 }
 
-void loop() {
-  delay(1000);
-}
-
+void loop() { delay(1000); }

@@ -1,4 +1,5 @@
 #include <Arduino.h>
+
 #include "AsyncATHandler.h"
 
 AsyncATHandler handler;
@@ -25,7 +26,4 @@ void setup() {
   }
 }
 
-void loop() {
-  delay(1000);
-}
-
+void loop() { delay(1000); }

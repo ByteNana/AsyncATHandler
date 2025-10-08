@@ -1,4 +1,5 @@
 #include <Arduino.h>
+
 #include "AsyncATHandler.h"
 
 AsyncATHandler handler;
@@ -37,7 +38,4 @@ void setup() {
   auto owned = handler.popCompletedPromise(p->getId());
 }
 
-void loop() {
-  delay(1000);
-}
-
+void loop() { delay(1000); }

@@ -14,17 +14,17 @@
 
 ## Setup the build environment
 setup:
-	@echo "🔧 Running cmake..."
+	@printf "\n\033[1;33m⚙️  Setting up build environment\033[0m\n\n"
 	@cmake -DLOG_LEVEL=$(LOG_LEVEL) -B$(BUILD_DIR)
 
 ## Build the project
 build: setup
-	@echo "🔨 Building...LOG_LEVEL=$(LOG_LEVEL)"
+	@printf "\n\033[1;33m🔨 Building project\033[0m\n\n"
 	@cmake --build $(BUILD_DIR)
 
 ## Clean build artifacts
 clean:
-	@echo "🧹 Cleaning up..."
+	@printf "\n\033[1;33m🧹 Cleaning build artifacts\033[0m\n\n"
 	@rm -rf $(BUILD_DIR) $(CCDB)
 
 # ==============================================================================

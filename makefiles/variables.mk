@@ -25,8 +25,6 @@ LOG_LEVEL := $(if $(LOG_LEVEL_ARG),$(LOG_LEVEL_ARG),3)
 # Make Configuration
 # ==============================================================================
 
-space := $(empty) $(empty)
-FILES := $(shell git ls-files --cached --others --exclude-standard $(SRC_DIRS) | grep -E '\.($(subst $(space),|,$(EXTENSIONS)))$$')
 
 # Suppress recursive make directory noise
 MAKEFLAGS += --no-print-directory

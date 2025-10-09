@@ -41,7 +41,7 @@ void AsyncATHandler::processCompleteLine(const String& line) {
   responseLine.commandId = 0;
 
   if (type == ResponseType::UNSOLICITED) {
-    handleUnsolicitedResponse(line);
+    urc.handleUnsolicitedResponse(line);
     return;
   }
 
@@ -56,8 +56,4 @@ void AsyncATHandler::processCompleteLine(const String& line) {
       log_e("Failed to acquire mutex for adding response");
     }
   }
-}
-
-void AsyncATHandler::handleUnsolicitedResponse(const String& line) {
-  if (urcCallback) { urcCallback(line); }
 }

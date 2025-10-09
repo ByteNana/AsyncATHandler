@@ -61,7 +61,7 @@ TEST_F(AsyncATHandlerHTTPTest, HttpSocketOpenWithLongTimeout) {
         }
         std::atomic<bool> urcReceived{false};
         String urcData;
-        handler->onURC([&](const String& urc) {
+        handler->urc.registerEvent("+QIOPEN", [&](const String& urc) {
           if (urc.indexOf("+QIOPEN:") != -1) {
             urcReceived = true;
             urcData = urc;

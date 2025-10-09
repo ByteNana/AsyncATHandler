@@ -9,6 +9,7 @@
 #include "ATPromise/ATPromise.h"
 #include "ATResponse/ATResponse.h"
 #include "AsyncSmartLock/AsyncSmartLock.h"
+#include "AsyncURCHandler/AsyncURCHandler.h"
 #include "freertos/FreeRTOS.h"
 
 class AsyncATHandler {
@@ -20,7 +21,6 @@ class AsyncATHandler {
 
   String lineBuffer = "";
   std::vector<std::unique_ptr<ATPromise>> pendingPromises;
-  URCCallback urcCallback = nullptr;
 
   uint32_t nextCommandId = 1;
 
@@ -30,12 +30,12 @@ class AsyncATHandler {
 
   ResponseType classifyLine(const String& line);
   ATPromise* findPromiseForResponse(const String& line);
-  void handleUnsolicitedResponse(const String& line);
 
   bool isLineComplete(String& buffer);
   void cleanupCompletedPromises();
 
  public:
+  AsyncURCHandler urc;
   AsyncATHandler();
   ~AsyncATHandler();
 
@@ -55,8 +55,6 @@ class AsyncATHandler {
   bool sendSync(const String& command, uint32_t timeout = 5000);
 
   std::unique_ptr<ATPromise> popCompletedPromise(uint32_t commandId);
-
-  void onURC(URCCallback callback) { urcCallback = callback; }
 
   Stream* getStream() { return stream; }
 };

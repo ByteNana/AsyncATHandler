@@ -160,7 +160,7 @@ TEST_F(AsyncATHandlerAdvancedTest, UnsolicitedResponseHandling) {
         g_callbackCalled = false;
         g_unsolicitedData = "";
 
-        handler->onURC([](const String& response) {
+        handler->urc.registerEvent("+CMT", [](const String& response) {
           g_callbackCalled = true;
           g_unsolicitedData = response;
           log_i("[Callback] URC received: '%s'", response.c_str());

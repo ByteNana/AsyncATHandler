@@ -63,7 +63,7 @@ void AsyncURCHandler::handleUnsolicitedResponse(const String& line) {
   std::vector<URCCallback> toInvoke;
   // Lock while gathering matching handlers
   {
-  auto _ = lock.guard();
+    auto _ = lock.guard();
     // Gather all matching handlers. findMatch would return only the first match.
     for (const auto& h : handlers) {
       if (line.startsWith(h.pattern) && h.cb) { toInvoke.push_back(h.cb); }

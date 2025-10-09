@@ -5,9 +5,9 @@
 #pragma once
 
 #include <Arduino.h>
+#include <AsyncSmartLock/AsyncSmartLock.h>
 
 #include "AsyncURCHandler.settings.h"
-#include <AsyncSmartLock/AsyncSmartLock.h>
 
 class AsyncURCHandler {
  private:

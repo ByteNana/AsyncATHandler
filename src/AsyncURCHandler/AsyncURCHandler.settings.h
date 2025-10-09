@@ -8,7 +8,5 @@ struct URCHandler {
   String pattern;
   URCCallback cb;
   // Compare only patterns for equality
-  bool operator==(const URCHandler& other) const {
-    return pattern == other.pattern;
-  }
+  bool operator==(const URCHandler& other) const { return pattern == other.pattern; }
 };

@@ -50,8 +50,10 @@ TEST_F(AsyncATHandlerURCTest, RegisterAndTriggerURC) {
         std::atomic<bool> called{false};
         String captured;
 
-        handler->urc.registerEvent(
-            "+CMTI:", [&](const String& urc) { called = true; captured = urc; });
+        handler->urc.registerEvent("+CMTI:", [&](const String& urc) {
+          called = true;
+          captured = urc;
+        });
 
         // Inject a URC line that matches the registered prefix
         InjectDataWithDelay(mockStream, "+CMTI: \"SM\",1\r\n", 50);
@@ -120,4 +122,3 @@ TEST_F(AsyncATHandlerURCTest, MultipleHandlersIndependent) {
 }
 
 FREERTOS_TEST_MAIN()
-

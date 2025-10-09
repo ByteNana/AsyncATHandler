@@ -12,12 +12,6 @@ class AsyncSmartLock {
   SemaphoreHandle_t mutex = nullptr;
 
  public:
-  AsyncSmartLock(SemaphoreHandle_t mutex) {
-    this->mutex = mutex;
-    this->mutex = xSemaphoreCreateMutex();
-    configASSERT(this->mutex);
-  }
-
   AsyncSmartLock() {
     this->mutex = xSemaphoreCreateMutex();
     configASSERT(this->mutex);

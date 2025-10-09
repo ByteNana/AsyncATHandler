@@ -22,7 +22,6 @@ bool AsyncURCHandler::isPattern(const String& pattern) {
 bool AsyncURCHandler::isMatch(const String& line) {
   auto g = lock.guard();
   return findMatch(line) != handlers.end();
-  return false;
 }
 
 void AsyncURCHandler::registerEvent(const String& pattern, URCCallback cb) {

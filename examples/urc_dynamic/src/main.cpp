@@ -35,7 +35,7 @@ void setup() {
   Serial.println("Waiting for URCs...");
 
   // Example of unregistering later
-  // handler.unregisterURC("RING");
+  // handler.urc.unregisterEvent("RING");
 }
 
 void loop() { delay(1000); }

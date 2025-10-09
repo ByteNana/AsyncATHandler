@@ -8,6 +8,7 @@
 
 #include "ATPromise/ATPromise.h"
 #include "ATResponse/ATResponse.h"
+#include "AsyncSmartLock/AsyncSmartLock.h"
 #include "freertos/FreeRTOS.h"
 
 class AsyncATHandler {
@@ -15,17 +16,7 @@ class AsyncATHandler {
   Stream* stream = nullptr;
   TaskHandle_t readerTask = nullptr;
   SemaphoreHandle_t mutex = nullptr;
-  SemaphoreHandle_t generalMutex = nullptr;
-
-  void lock() {
-    configASSERT(generalMutex);
-    xSemaphoreTake(generalMutex, portMAX_DELAY);
-  }
-
-  void unlock() {
-    configASSERT(generalMutex);
-    xSemaphoreGive(generalMutex);
-  }
+  AsyncSmartLock lock;
 
   String lineBuffer = "";
   std::vector<std::unique_ptr<ATPromise>> pendingPromises;

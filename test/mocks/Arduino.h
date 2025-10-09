@@ -7,6 +7,18 @@
 #include <random>
 #include <thread>
 
+template <typename T, typename U>
+inline constexpr auto min(T a, U b) -> typename std::common_type<T, U>::type {
+  using R = typename std::common_type<T, U>::type;
+  return (a < b) ? R(a) : R(b);
+}
+
+template <typename T, typename U>
+inline constexpr auto max(T a, U b) -> typename std::common_type<T, U>::type {
+  using R = typename std::common_type<T, U>::type;
+  return (a > b) ? R(a) : R(b);
+}
+
 // Arduino type definitions
 typedef bool boolean;
 typedef uint8_t byte;

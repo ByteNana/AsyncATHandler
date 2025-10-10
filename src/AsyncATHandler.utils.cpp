@@ -20,21 +20,8 @@ ResponseType AsyncATHandler::classifyLine(const String& line) {
   if (trimmed == "ERROR") return ResponseType::FINAL_ERROR;
   if (trimmed.startsWith("+CME ERROR:")) return ResponseType::FINAL_CME_ERROR;
 
-  // Check for explicit URCs.
-  if (trimmed.startsWith("+CMT:") ||      // SMS notification
-      trimmed.startsWith("+CMTI:") ||     // SMS index notification
-      trimmed.startsWith("+CLIP:") ||     // Calling line identification
-      trimmed.startsWith("+CREG:") ||     // Network registration (when unsolicited)
-      trimmed.startsWith("+CGREG:") ||    // GPRS registration (when unsolicited)
-      trimmed.startsWith("+CEREG:") ||    // EPS registration (when unsolicited)
-      trimmed.startsWith("+QIURC:") ||    // Quectel socket URC
-      trimmed.startsWith("+QMTRECV:") ||  // Quectel MQTT receive URC
-      trimmed.startsWith("+QIOPEN:") || trimmed.startsWith("+QIRD:") ||
-      trimmed.startsWith("+QMTSTAT:") ||  // Quectel MQTT status URC
-      trimmed.startsWith("+QSSLOPEN:") || trimmed.startsWith("+QSSLURC:") ||
-      trimmed.startsWith("+QSSLRECV:") || trimmed.startsWith("+QICLOSE")) {  // Quectel open URC
-    return ResponseType::UNSOLICITED;
-  }
+  // Check dynamically registered URC patterns (thread-safe)
+  if (urc.isMatch(trimmed)) { return ResponseType::UNSOLICITED; }
 
   // Default: intermediate data
   return ResponseType::INTERMEDIATE_DATA;

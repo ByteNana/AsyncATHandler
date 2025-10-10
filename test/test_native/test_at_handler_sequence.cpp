@@ -209,7 +209,7 @@ TEST_F(SequenceTest, ComplexATSequenceWithURC) {
         // Step 1: Query network registration
         std::atomic<bool> urcReceived{false};
         String urcData;
-        handler->onURC([&](const String& urc) {
+        handler->urc.registerEvent("+CREG", [&](const String& urc) {
           log_i("[URC] Received: '%s'", urc.c_str());
           if (urc.indexOf("+CREG: 2") != -1) {
             urcReceived = true;

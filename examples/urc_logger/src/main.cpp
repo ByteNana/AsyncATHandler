@@ -4,6 +4,16 @@
 
 AsyncATHandler handler;
 
+URCCallback URCWithAT = [](const String& urc) {
+  Serial.print("[URC Lambda] ");
+  Serial.println(urc);
+};
+
+void URCWithPlus(const String& urc) {
+  Serial.print("[URC Function] ");
+  Serial.println(urc);
+}
+
 void setup() {
   Serial.begin(115200);
   while (!Serial) {}
@@ -11,10 +21,8 @@ void setup() {
 
   Serial.println("[EXAMPLE] URC logger");
 
-  handler.onURC([](const String& urc) {
-    Serial.print("[URC] ");
-    Serial.println(urc);
-  });
+  handler.urc.registerEvent("+", URCWithPlus);
+  handler.urc.registerEvent("AT", URCWithAT);
 
   if (!handler.begin(Serial)) {
     Serial.println("Failed to start AsyncATHandler");

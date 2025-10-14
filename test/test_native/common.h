@@ -1,5 +1,6 @@
 #pragma once
 
+#include <freertos/FreeRTOSConfig.h>
 #include <gtest/gtest.h>
 
 #include <atomic>
@@ -7,7 +8,6 @@
 #include <functional>
 #include <string>
 #include <thread>
-#include <freertos/FreeRTOSConfig.h>
 
 #include "AsyncATHandler.h"
 #include "Stream.h"

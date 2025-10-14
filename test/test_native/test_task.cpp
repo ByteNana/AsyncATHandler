@@ -4,10 +4,10 @@
 #include <chrono>
 #include <iostream>
 
-#include "freertos/FreeRTOSConfig.h"
 #include "common.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/FreeRTOSConfig.h"
 
 #define mainCHECK_TASK_PRIORITY (configMAX_PRIORITIES - 2)
 #define mainQUEUE_POLL_PRIORITY (tskIDLE_PRIORITY + 1)

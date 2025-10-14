@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
-project(AsyncATHandler C CXX)
+project(AsyncATHandler VERSION 0.1.1 LANGUAGES C CXX)
 include(cmake/compiler_settings.cmake)
+
+set(PROJECT_VERSION_SUFIX "-rc.1")
+set(CMAKE_PROJECT_VERSION "${PROJECT_VERSION}${PROJECT_VERSION_SUFIX}")
 
 # Config flag to differentiate between embedded vs native build
 option(NATIVE_BUILD "Use mock Arduino headers for native testing" ON)

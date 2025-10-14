@@ -4,7 +4,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "FreeRTOSConfig.h"
+#include "freertos/FreeRTOSConfig.h"
 #include "common.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"

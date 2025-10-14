@@ -3,9 +3,9 @@
 #include <atomic>
 #include <chrono>
 
-#include "FreeRTOSConfig.h"
 #include "common.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/FreeRTOSConfig.h"
 
 class SemaphoreTest : public FreeRTOSTest {};
 

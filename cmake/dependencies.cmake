@@ -6,7 +6,7 @@ cmake_policy(SET CMP0135 NEW)
 FetchContent_Declare(
   ArduinoNativeMocks
   GIT_REPOSITORY https://github.com/Bytenana/ArduinoMock
-  GIT_TAG master
+  GIT_TAG rc-0.1.1
 )
 FetchContent_MakeAvailable(ArduinoNativeMocks)
 

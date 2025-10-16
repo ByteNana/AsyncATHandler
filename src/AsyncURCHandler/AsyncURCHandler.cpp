@@ -36,13 +36,13 @@ void AsyncURCHandler::registerEvent(const String& pattern, URCCallback cb) {
   // If found, update the callback
   if (it != handlers.end()) {
     it->cb = cb;
-    log_i("Updated URC handler for pattern: %s", pattern.c_str());
+    log_v("Updated URC handler for pattern: %s", pattern.c_str());
     return;
   }
 
   // If not found, add new handler
   handlers.push_back(URCHandler{pattern, cb});
-  log_i("Registered URC handler for pattern: %s", pattern.c_str());
+  log_v("Registered URC handler for pattern: %s", pattern.c_str());
 }
 
 void AsyncURCHandler::unregisterEvent(const String& pattern) {
@@ -55,7 +55,7 @@ void AsyncURCHandler::unregisterEvent(const String& pattern) {
   }
 
   handlers.erase(it);
-  log_i("Unregistered URC handler for pattern: %s", pattern.c_str());
+  log_v("Unregistered URC handler for pattern: %s", pattern.c_str());
 }
 
 void AsyncURCHandler::handleUnsolicitedResponse(const String& line) {

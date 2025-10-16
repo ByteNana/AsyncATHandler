@@ -15,7 +15,7 @@ ATPromise* AsyncATHandler::sendCommand(const String& command) {
   if (xSemaphoreTake(mutex, pdMS_TO_TICKS(100))) {
     pendingPromises.push_back(std::move(promise));
     xSemaphoreGive(mutex);
-    log_i("Sending command [%u]: %s", id, command.c_str());
+    log_d("Sending command [%u]: %s", id, command.c_str());
     stream->print(command);
     stream->print("\r\n");
     stream->flush();
@@ -31,9 +31,9 @@ bool AsyncATHandler::sendSync(const String& command, String& response, uint32_t 
   auto _ = lock.guard();
 
   promise->timeout(timeout);
-  log_i("Waiting for promise [%u] with timeout %u ms", promise->getId(), timeout);
+  log_d("Waiting for promise [%u] with timeout %u ms", promise->getId(), timeout);
   bool success = promise->wait();
-  log_i("Promise [%u] wait finished. Success: %s", promise->getId(), success ? "TRUE" : "FALSE");
+  log_d("Promise [%u] wait finished. Success: %s", promise->getId(), success ? "TRUE" : "FALSE");
 
   if (success && promise->getResponse()) {
     response = promise->getResponse()->getFullResponse();

@@ -210,7 +210,7 @@ TEST_F(SequenceTest, ComplexATSequenceWithURC) {
         std::atomic<bool> urcReceived{false};
         String urcData;
         handler->urc.registerEvent("+CREG", [&](const String& urc) {
-          log_i("[URC] Received: '%s'", urc.c_str());
+          log_d("[URC] Received: '%s'", urc.c_str());
           if (urc.indexOf("+CREG: 2") != -1) {
             urcReceived = true;
             urcData = urc;

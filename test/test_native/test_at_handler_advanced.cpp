@@ -67,7 +67,7 @@ TEST_F(AsyncATHandlerAdvancedTest, SimpleSyncCommand) {
           throw std::runtime_error("Response should contain OK");
         }
 
-        log_i("[Test] Simple sync command test passed");
+        log_d("[Test] Simple sync command test passed");
       },
       "SimpleSyncTest", configMINIMAL_STACK_SIZE * 4);
 
@@ -104,7 +104,7 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
 
         mockStream->ClearTxData();
 
-        log_i("[Test] Testing variadic template: sendCommand(\"AT+\", \"VAR\")");
+        log_d("[Test] Testing variadic template: sendCommand(\"AT+\", \"VAR\")");
 
         ATPromise* promise = handler->sendCommand("AT+", "VAR");
         if (!promise) {
@@ -117,7 +117,7 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
         vTaskDelay(pdMS_TO_TICKS(100));
 
         std::string sentData = mockStream->GetTxData();
-        log_i("[Response] Sent data: '%s'", sentData.c_str());
+        log_d("[Response] Sent data: '%s'", sentData.c_str());
 
         if (!waitResult) { throw std::runtime_error("Promise timed out"); }
 
@@ -127,7 +127,7 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
         }
 
         String response = response_obj->getFullResponse();
-        log_i("[Response] Response: '%s'", response.c_str());
+        log_d("[Response] Response: '%s'", response.c_str());
 
         if (sentData != "AT+VAR\r\n") {
           throw std::runtime_error("Command not sent correctly: " + sentData);
@@ -140,7 +140,7 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
         // FIX: Safely pop the promise
         auto p = handler->popCompletedPromise(promise->getId());
         if (!p) { throw std::runtime_error("Failed to pop completed promise"); }
-        log_i("[Test] Variadic template test passed: sendCommand(\"AT+\", \"VAR\")");
+        log_d("[Test] Variadic template test passed: sendCommand(\"AT+\", \"VAR\")");
       },
       "VariadicTest", configMINIMAL_STACK_SIZE * 4);
 
@@ -163,24 +163,24 @@ TEST_F(AsyncATHandlerAdvancedTest, UnsolicitedResponseHandling) {
         handler->urc.registerEvent("+CMT", [](const String& response) {
           g_callbackCalled = true;
           g_unsolicitedData = response;
-          log_i("[Callback] URC received: '%s'", response.c_str());
+          log_d("[Callback] URC received: '%s'", response.c_str());
         });
 
-        log_i("[Test] URC callback set, injecting URC data...");
+        log_d("[Test] URC callback set, injecting URC data...");
 
         vTaskDelay(pdMS_TO_TICKS(100));
 
         mockStream->InjectRxData("+CMT: \"+1234567890\",\"\",\"24/01/15,10:30:00\"\r\n");
         vTaskDelay(pdMS_TO_TICKS(500));
 
-        log_i("[Test] Checking if callback was called...");
+        log_d("[Test] Checking if callback was called...");
         if (!g_callbackCalled.load()) { throw std::runtime_error("URC callback not called"); }
 
         if (!g_unsolicitedData.startsWith("+CMT:")) {
           throw std::runtime_error("Incorrect URC data: " + g_unsolicitedData);
         }
 
-        log_i("[Test] URC handling successful: '%s'", g_unsolicitedData.c_str());
+        log_d("[Test] URC handling successful: '%s'", g_unsolicitedData.c_str());
       },
       "UnsolicitedTest", configMINIMAL_STACK_SIZE * 4);
 

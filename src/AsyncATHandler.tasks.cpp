@@ -4,7 +4,7 @@
 
 void AsyncATHandler::readerTaskFunction(void* parameter) {
   AsyncATHandler* handler = static_cast<AsyncATHandler*>(parameter);
-  log_i("Reader task started.");
+  log_v("Reader task started.");
   while (true) {
     handler->processIncomingData();
     vTaskDelay(pdMS_TO_TICKS(10));

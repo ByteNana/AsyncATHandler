@@ -78,7 +78,7 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
       },
       "InitTest", configMINIMAL_STACK_SIZE * 4);
 
-  log_i("Task result: %s", testResult ? "SUCCESS" : "FAILURE");
+  log_d("Task result: %s", testResult ? "SUCCESS" : "FAILURE");
   EXPECT_TRUE(testResult);
 }
 
@@ -140,7 +140,7 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
       },
       "SyncBasicTest", configMINIMAL_STACK_SIZE * 6, 2, 5000);
 
-  log_i("SendSync task result: %s", testResult ? "SUCCESS" : "FAILURE");
+  log_d("SendSync task result: %s", testResult ? "SUCCESS" : "FAILURE");
   EXPECT_TRUE(testResult);
 }
 

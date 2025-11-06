@@ -66,16 +66,6 @@ The handler lets you **register**, **update**, and **remove** callbacks for URCs
 
 ---
 
-## Logging Behavior
-
-Uses ESP-IDF logging macros:
-
-* `log_v`: verbose — registration, updates, removals
-* `log_w`: warnings — invalid registration or missing handlers
-  This keeps the runtime overhead minimal while still traceable when verbose logging is enabled.
-
----
-
 ## Example Usage
 
 ```cpp

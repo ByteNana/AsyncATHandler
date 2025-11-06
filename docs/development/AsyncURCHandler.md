@@ -1,8 +1,3 @@
-Perfect — you want your `AsyncURCHandler` doc to match that style and level of completeness.
-Here’s a version that fits seamlessly alongside your `AsyncATHandler`, written in the same tone, structure, and formatting:
-
----
-
 # AsyncURCHandler Concept
 
 `AsyncURCHandler` manages unsolicited result code (URC) callbacks for `AsyncATHandler`.

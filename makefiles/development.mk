@@ -15,12 +15,12 @@
 ## Setup the build environment
 setup:
 	@printf "\n\033[1;33m⚙️  Setting up build environment\033[0m\n\n"
-	@cmake -DLOG_LEVEL=$(LOG_LEVEL) -B$(BUILD_DIR)
+	@cmake -E time cmake -DLOG_LEVEL=$(LOG_LEVEL) -B $(BUILD_DIR)
 
 ## Build the project
 build: setup
 	@printf "\n\033[1;33m🔨 Building project\033[0m\n\n"
-	@cmake --build $(BUILD_DIR)
+	@cmake -E time cmake --build $(BUILD_DIR)
 
 ## Clean build artifacts
 clean:

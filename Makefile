@@ -4,7 +4,7 @@ include makefiles/test.mk
 
 .PHONY: all help
 
-all: build
+all: build-native
 
 help:
 	@echo "Available targets:"

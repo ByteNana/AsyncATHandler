@@ -1,5 +1,6 @@
 # === TESTS ===
-if(ASYNCAT_HANDLER_BUILD_TESTS)
+if(ASYNCAT_HANDLER_BUILD_TESTS_NATIVE)
+  message(STATUS "Building native tests for AsyncATHandler")
   add_compile_definitions(LOG_LEVEL=${LOG_LEVEL})
   enable_testing()
 

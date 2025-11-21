@@ -10,7 +10,7 @@
 #=============================================================================
 
 ## Run unit tests
-test: build
+test-native: build-test-native
 	@printf "\n\033[1;33m🧪 Running Unit Tests\033[0m\n\n"
 	@echo "🧪 Running unit tests..."
 	GTEST_COLOR=1 ctest --output-on-failure --test-dir build -V

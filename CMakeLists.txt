@@ -7,7 +7,6 @@ set(CMAKE_PROJECT_VERSION "${PROJECT_VERSION}${PROJECT_VERSION_SUFIX}")
 
 # Config flag to differentiate between embedded vs native build
 option(NATIVE_BUILD "Use mock Arduino headers for native testing" ON)
-option(ASYNCAT_HANDLER_BUILD_TESTS "Build tests" ON)
 option(CLANGD_INDEX_EXAMPLES "Add example sources to compile_commands.json" ON)
 
 # Paths

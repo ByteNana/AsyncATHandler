@@ -13,12 +13,12 @@
 # ==============================================================================
 
 ## Setup the build environment
-setup:
+setup-test-native:
 	@printf "\n\033[1;33m⚙️  Setting up build environment\033[0m\n\n"
-	@cmake -DLOG_LEVEL=$(LOG_LEVEL) -B$(BUILD_DIR)
+	@cmake -B $(BUILD_DIR) -DLOG_LEVEL=$(LOG_LEVEL) -DASYNCAT_HANDLER_BUILD_TESTS_NATIVE=ON
 
 ## Build the project
-build: setup
+build-test-native: setup-test-native
 	@printf "\n\033[1;33m🔨 Building project\033[0m\n\n"
 	@cmake --build $(BUILD_DIR)
 

@@ -33,3 +33,6 @@ test-esp32:
 flash-esp32-test: test-esp32
 	@printf "\033[1;33m🚀 Flashing hardware test to ESP32...\033[0m\n"
 	@pio test -d ${HARDW_TEST_DIR} -e test
+
+test-remote-esp32:
+	pio remote --agent IOT01 test -d ${HARDW_TEST_DIR} -e test --upload-port /dev/ttyGSM

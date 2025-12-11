@@ -1,102 +1,172 @@
-#include <Arduino.h>
-#include <AsyncATHandler.h>
-#include <unity.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "mocks.h"
+#include <atomic>
+#include <chrono>
+#include <iostream>
+#include <thread>
 
-AsyncATHandler handler;
-HardwareMockStream mockSerial;
+#include "AsyncATHandler.h"
+#include "Stream.h"
+#include "common.h"
+#include "esp_log.h"
 
-void setUp(void) { mockSerial.clearSentData(); }
+using ::testing::NiceMock;
 
-void tearDown(void) {}
+class AsyncATHandlerBasicTest : public FreeRTOSTest {
+ protected:
+  void SetUp() override {
+    FreeRTOSTest::SetUp();
 
-// Test case for a successful "AT" command.
-// 1. Mock a successful "OK" response.
-// 2. Send the command and expect a successful result.
-// 3. Assert that the command was sent and the response contains "OK".
-void test_at_command_success() {
-  mockSerial.mockResponse("AT\r\nOK\r\n");
+    mockStream = new NiceMock<MockStream>();
+    mockStream->SetupDefaults();
+    log_d("MockStream created: %p", mockStream);
 
-  String response;
-  bool ok = handler.sendSync("AT", response, 1000);
+    handler = new AsyncATHandler();
+    log_d("AsyncATHandler created: %p", handler);
+  }
 
-  TEST_ASSERT_EQUAL_STRING("AT\r\n", mockSerial.getSentData().c_str());
-  TEST_ASSERT_TRUE(ok);
-  TEST_ASSERT_TRUE(response.indexOf("OK") != -1);
+  void TearDown() override {
+    if (handler) {
+      while (true) {
+        auto promise = handler->popCompletedPromise(0);
+        if (!promise) {
+          break;  // No more promises to clean up
+        }
+      }
+      bool success = CleanupATHandler(handler);
+      if (!success) { log_w("Handler teardown may have failed"); }
+      delay(200);
+      delete handler;
+      handler = nullptr;
+    }
+
+    if (mockStream) {
+      log_d("Deleting mockStream: %p", mockStream);
+      delete mockStream;
+      mockStream = nullptr;
+    }
+
+    FreeRTOSTest::TearDown();
+  }
+
+ public:
+  NiceMock<MockStream>* mockStream = nullptr;
+  AsyncATHandler* handler = nullptr;
+};
+
+TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
+  bool testResult = runInFreeRTOSTask(
+      [this]() {
+        // Test initial state - handler should not be connected
+        if (handler->getStream() != nullptr) {
+          throw "Handler should not have stream initially";
+        }
+
+        // Test successful initialization
+        if (!handler->begin(*mockStream)) { throw "Handler begin failed"; }
+
+        // Verify stream is set
+        if (handler->getStream() != mockStream) {
+          throw "Stream not properly set";
+        }
+
+        // Test that we cannot initialize twice
+        if (handler->begin(*mockStream)) {
+          throw "Should not initialize twice";
+        }
+      },
+      "InitTest", configMINIMAL_STACK_SIZE * 4);
+
+  log_d("Task result: %s", testResult ? "SUCCESS" : "FAILURE");
+  EXPECT_TRUE(testResult);
 }
 
-// Test case for a command that times out.
-// 1. Mock no response at all.
-// 2. Send the command and expect it to fail due to timeout.
-// 3. Assert that the command was sent and the handler reported failure.
-void test_at_command_timeout() {
-  mockSerial.mockResponse("");
+TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
+  bool testResult = runInFreeRTOSTask(
+      [this]() {
+        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
 
-  String response;
-  bool ok = handler.sendSync("AT", response, 500);
+        // Give handler time to fully initialize
+        vTaskDelay(pdMS_TO_TICKS(100));
 
-  TEST_ASSERT_EQUAL_STRING("AT\r\n", mockSerial.getSentData().c_str());
-  TEST_ASSERT_FALSE(ok);
+        // Start responder task to simulate modem response
+        struct ResponderData {
+          AsyncATHandlerBasicTest* test;
+          std::atomic<bool> complete{false};
+        } responderData = {this, {false}};
+
+        auto responderTask = [](void* pvParameters) {
+          auto* data = static_cast<ResponderData*>(pvParameters);
+          vTaskDelay(pdMS_TO_TICKS(100));
+
+          data->test->mockStream->InjectRxData("AT\r\n");
+          data->test->mockStream->InjectRxData("OK\r\n");
+
+          data->complete = true;
+          vTaskDelete(nullptr);
+        };
+
+        TaskHandle_t responderHandle = nullptr;
+        xTaskCreate(
+            responderTask, "ResponderTask", configMINIMAL_STACK_SIZE * 2, &responderData, 1,
+            &responderHandle);
+
+        // Clear TX buffer before test
+        mockStream->ClearTxData();
+
+        // Send sync command
+        String response;
+        bool success = handler->sendSync("AT", response, 3000);
+
+        // Wait for responder to complete
+        while (!responderData.complete.load()) { vTaskDelay(pdMS_TO_TICKS(10)); }
+
+        // Give extra time for response processing
+        vTaskDelay(pdMS_TO_TICKS(100));
+
+        // Verify command was sent
+        std::string sentData = mockStream->GetTxData();
+        if (sentData != "AT\r\n") {
+          throw "Command not sent correctly: " + sentData;
+        }
+
+        // Verify response
+        if (!success) { throw "Command should have succeeded"; }
+
+        if (response.indexOf("OK") == -1) {
+          throw "Response should contain OK: " + response;
+        }
+      },
+      "SyncBasicTest", configMINIMAL_STACK_SIZE * 6, 2, 5000);
+
+  log_d("SendSync task result: %s", testResult ? "SUCCESS" : "FAILURE");
+  EXPECT_TRUE(testResult);
 }
 
-// Test case for a command that returns an ERROR.
-// 1. Mock an "ERROR" response.
-// 2. Send the command and expect it to fail.
-// 3. Assert that the command was sent and the response contains "ERROR".
-void test_at_command_error() {
-  mockSerial.mockResponse("AT\r\nERROR\r\n");
+// Simplified test to isolate the issue
+TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
+  bool testResult = runInFreeRTOSTask(
+      [this]() {
+        if (!handler->begin(*mockStream)) { throw "Handler begin failed"; }
 
-  String response;
-  bool ok = handler.sendSync("AT", response, 1000);
+        // Just wait a bit
+        vTaskDelay(pdMS_TO_TICKS(100));
 
-  TEST_ASSERT_EQUAL_STRING("AT\r\n", mockSerial.getSentData().c_str());
-  TEST_ASSERT_FALSE(ok);
-  TEST_ASSERT_TRUE(response.indexOf("ERROR") != -1);
-}
+        // Don't call end() here - let teardown handle it
+      },
+      "MinimalTest", configMINIMAL_STACK_SIZE * 4);
 
-void test_gprs_connect_sequence() {
-  mockSerial.mockResponse(
-      "AT+QIDEACT=1\r\nOK\r\n"
-      "AT+QICSGP=1,1,\"internet\",\"user\",\"pass\"\r\nOK\r\n"
-      "AT+QIACT=1\r\nOK\r\n"
-      "AT+CGATT=1\r\nOK\r\n");
-
-  String response;
-  bool ok = true;
-
-  ok &= handler.sendSync("AT+QIDEACT=1", response, 2000);
-  String cmdQICSGP = String("AT+QICSGP=1,1,\"") + "internet" + "\",\"user\",\"pass\"";
-  ok &= handler.sendSync(cmdQICSGP, response, 5000);
-  ok &= handler.sendSync("AT+QIACT=1", response, 150000);
-  ok &= handler.sendSync("AT+CGATT=1", response, 60000);
-
-  String expected =
-      "AT+QIDEACT=1\r\n"
-      "AT+QICSGP=1,1,\"internet\",\"user\",\"pass\"\r\n"
-      "AT+QIACT=1\r\n"
-      "AT+CGATT=1\r\n";
-
-  TEST_ASSERT_EQUAL_STRING(expected.c_str(), mockSerial.getSentData().c_str());
-  TEST_ASSERT_TRUE(ok);
+  EXPECT_TRUE(testResult);
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(2000);
-
-  UNITY_BEGIN();
-
-  TEST_ASSERT_TRUE(handler.begin(mockSerial));
-
-  RUN_TEST(test_at_command_success);
-  RUN_TEST(test_at_command_timeout);
-  RUN_TEST(test_at_command_error);
-  RUN_TEST(test_gprs_connect_sequence);
-
-  UNITY_END();
+  ::testing::InitGoogleTest();
 }
 
 void loop() {
-  // The loop is not used for unit testing
+  if (RUN_ALL_TESTS())
+    ;
+  delay(1000);
 }

@@ -9,11 +9,11 @@
 #include <string>
 #include <thread>
 
-#include "mocks.h"
 #include "AsyncATHandler.h"
 #include "Stream.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "mocks.h"
 
 class GlobalSchedulerEnvironment : public ::testing::Environment {
  private:
@@ -26,9 +26,7 @@ class GlobalSchedulerEnvironment : public ::testing::Environment {
       globalSchedulerStarted = true;
       vTaskStartScheduler();
     });
-    while (!globalSchedulerStarted.load()) {
-      delay(10);
-    }
+    while (!globalSchedulerStarted.load()) { delay(10); }
     delay(100);
   }
   void TearDown() override {
@@ -143,4 +141,3 @@ struct TestMessage {
     return id == other.id && strcmp(name, other.name) == 0 && value == other.value;
   }
 };
-

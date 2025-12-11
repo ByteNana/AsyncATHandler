@@ -59,22 +59,16 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
         // Test initial state - handler should not be connected
-        if (handler->getStream() != nullptr) {
-          throw "Handler should not have stream initially";
-        }
+        if (handler->getStream() != nullptr) { throw "Handler should not have stream initially"; }
 
         // Test successful initialization
         if (!handler->begin(*mockStream)) { throw "Handler begin failed"; }
 
         // Verify stream is set
-        if (handler->getStream() != mockStream) {
-          throw "Stream not properly set";
-        }
+        if (handler->getStream() != mockStream) { throw "Stream not properly set"; }
 
         // Test that we cannot initialize twice
-        if (handler->begin(*mockStream)) {
-          throw "Should not initialize twice";
-        }
+        if (handler->begin(*mockStream)) { throw "Should not initialize twice"; }
       },
       "InitTest", configMINIMAL_STACK_SIZE * 4);
 
@@ -127,16 +121,12 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
 
         // Verify command was sent
         std::string sentData = mockStream->GetTxData();
-        if (sentData != "AT\r\n") {
-          throw "Command not sent correctly: " + sentData;
-        }
+        if (sentData != "AT\r\n") { throw "Command not sent correctly: " + sentData; }
 
         // Verify response
         if (!success) { throw "Command should have succeeded"; }
 
-        if (response.indexOf("OK") == -1) {
-          throw "Response should contain OK: " + response;
-        }
+        if (response.indexOf("OK") == -1) { throw "Response should contain OK: " + response; }
       },
       "SyncBasicTest", configMINIMAL_STACK_SIZE * 6, 2, 5000);
 

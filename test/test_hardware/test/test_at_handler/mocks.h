@@ -2,12 +2,12 @@
 
 #include <Arduino.h>
 #include <Stream.h>
-
-#include <vector>
-#include <queue>
-#include <mutex>
-#include <condition_variable>
 #include <gmock/gmock.h>
+
+#include <condition_variable>
+#include <mutex>
+#include <queue>
+#include <vector>
 
 class HardwareMockStream : public Stream {
  private:

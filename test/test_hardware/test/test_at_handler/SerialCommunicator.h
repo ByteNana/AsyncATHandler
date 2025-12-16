@@ -82,16 +82,12 @@ void SerialCommunicator::flush() { activeStream->flush(); }
 
 size_t SerialCommunicator::write(uint8_t c) {
   size_t result = activeStream->write(c);
-  if (activeStream != mockStream) {
-    mockStream->write(c);
-  }
+  if (activeStream != mockStream) { mockStream->write(c); }
   return result;
 }
 
 size_t SerialCommunicator::write(const uint8_t *buffer, size_t size) {
   size_t result = activeStream->write(buffer, size);
-  if (activeStream != mockStream) {
-    mockStream->write(buffer, size);
-  }
+  if (activeStream != mockStream) { mockStream->write(buffer, size); }
   return result;
 }

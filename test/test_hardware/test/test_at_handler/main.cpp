@@ -4,6 +4,7 @@
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <string> // Added for std::string
 #include <thread>
 
 #include "AsyncATHandler.h"
@@ -59,16 +60,16 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
         // Test initial state - handler should not be connected
-        if (handler->getStream() != nullptr) { throw "Handler should not have stream initially"; }
+        if (handler->getStream() != nullptr) { throw std::runtime_error("Handler should not have stream initially"); }
 
         // Test successful initialization
-        if (!handler->begin(*testStream)) { throw "Handler begin failed"; }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
 
         // Verify stream is set
-        if (handler->getStream() != testStream) { throw "Stream not properly set"; }
+        if (handler->getStream() != testStream) { throw std::runtime_error("Stream not properly set"); }
 
         // Test that we cannot initialize twice
-        if (handler->begin(*testStream)) { throw "Should not initialize twice"; }
+        if (handler->begin(*testStream)) { throw std::runtime_error("Should not initialize twice"); }
       },
       "InitTest", configMINIMAL_STACK_SIZE * 4);
 
@@ -121,12 +122,12 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
 
         // Verify command was sent
         std::string sentData = testStream->GetSentData();
-        if (sentData != "AT\r\n") { throw "Command not sent correctly: " + sentData; }
+        if (sentData != "AT\r\n") { throw std::runtime_error(std::string("Command not sent correctly: ") + sentData.c_str()); }
 
         // Verify response
-        if (!success) { throw "Command should have succeeded"; }
+        if (!success) { throw std::runtime_error("Command should have succeeded"); }
 
-        if (response.indexOf("OK") == -1) { throw "Response should contain OK: " + response; }
+        if (response.indexOf("OK") == -1) { throw std::runtime_error(std::string("Response should contain OK: ") + response.c_str()); }
       },
       "SyncBasicTest", configMINIMAL_STACK_SIZE * 6, 2, 5000);
 
@@ -138,7 +139,7 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
 TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*testStream)) { throw "Handler begin failed"; }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
 
         // Just wait a bit
         vTaskDelay(pdMS_TO_TICKS(100));

@@ -7,10 +7,10 @@
 #include <thread>
 
 #include "AsyncATHandler.h"
+#include "SerialCommunicator.h"
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
-#include "SerialCommunicator.h"
 
 using ::testing::NiceMock;
 
@@ -19,7 +19,7 @@ class AsyncATHandlerBasicTest : public FreeRTOSTest {
   void SetUp() override {
     FreeRTOSTest::SetUp();
 
-    testStream = new SerialCommunicator(); 
+    testStream = new SerialCommunicator();
     log_d("Stream created: %p", testStream);
 
     handler = new AsyncATHandler();

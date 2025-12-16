@@ -6,8 +6,8 @@
 #include <iostream>
 #include <thread>
 
-#include "SerialCommunicator.h"
 #include "AsyncATHandler.h"
+#include "SerialCommunicator.h"
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
@@ -19,7 +19,7 @@ class AsyncATHandlerBasicTest : public FreeRTOSTest {
   void SetUp() override {
     FreeRTOSTest::SetUp();
 
-    testStream = new SerialCommunicator(); 
+    testStream = new SerialCommunicator();
     log_d("SerialCommunicator created: %p", testStream);
 
     handler = new AsyncATHandler();

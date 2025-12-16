@@ -6,6 +6,7 @@
 #include <iostream>
 #include <thread>
 
+#include "SerialCommunicator.h"
 #include "AsyncATHandler.h"
 #include "Stream.h"
 #include "common.h"
@@ -18,9 +19,8 @@ class AsyncATHandlerBasicTest : public FreeRTOSTest {
   void SetUp() override {
     FreeRTOSTest::SetUp();
 
-    mockStream = new NiceMock<MockStream>();
-    mockStream->SetupDefaults();
-    log_d("MockStream created: %p", mockStream);
+    testStream = new SerialCommunicator(); 
+    log_d("SerialCommunicator created: %p", testStream);
 
     handler = new AsyncATHandler();
     log_d("AsyncATHandler created: %p", handler);
@@ -41,18 +41,18 @@ class AsyncATHandlerBasicTest : public FreeRTOSTest {
       handler = nullptr;
     }
 
-    if (mockStream) {
-      log_d("Deleting mockStream: %p", mockStream);
-      delete mockStream;
-      mockStream = nullptr;
+    if (testStream) {
+      log_d("Deleting testStream: %p", testStream);
+      delete testStream;
+      testStream = nullptr;
     }
 
     FreeRTOSTest::TearDown();
   }
 
  public:
-  NiceMock<MockStream>* mockStream = nullptr;
   AsyncATHandler* handler = nullptr;
+  SerialCommunicator* testStream = nullptr;
 };
 
 TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
@@ -62,13 +62,13 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
         if (handler->getStream() != nullptr) { throw "Handler should not have stream initially"; }
 
         // Test successful initialization
-        if (!handler->begin(*mockStream)) { throw "Handler begin failed"; }
+        if (!handler->begin(*testStream)) { throw "Handler begin failed"; }
 
         // Verify stream is set
-        if (handler->getStream() != mockStream) { throw "Stream not properly set"; }
+        if (handler->getStream() != testStream) { throw "Stream not properly set"; }
 
         // Test that we cannot initialize twice
-        if (handler->begin(*mockStream)) { throw "Should not initialize twice"; }
+        if (handler->begin(*testStream)) { throw "Should not initialize twice"; }
       },
       "InitTest", configMINIMAL_STACK_SIZE * 4);
 
@@ -79,7 +79,7 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
 TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
 
         // Give handler time to fully initialize
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -94,8 +94,8 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
           auto* data = static_cast<ResponderData*>(pvParameters);
           vTaskDelay(pdMS_TO_TICKS(100));
 
-          data->test->mockStream->InjectRxData("AT\r\n");
-          data->test->mockStream->InjectRxData("OK\r\n");
+          data->test->testStream->mockResponse("AT\r\n");
+          data->test->testStream->mockResponse("OK\r\n");
 
           data->complete = true;
           vTaskDelete(nullptr);
@@ -107,7 +107,7 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
             &responderHandle);
 
         // Clear TX buffer before test
-        mockStream->ClearTxData();
+        testStream->ClearSentData();
 
         // Send sync command
         String response;
@@ -120,7 +120,7 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
         vTaskDelay(pdMS_TO_TICKS(100));
 
         // Verify command was sent
-        std::string sentData = mockStream->GetTxData();
+        std::string sentData = testStream->GetSentData();
         if (sentData != "AT\r\n") { throw "Command not sent correctly: " + sentData; }
 
         // Verify response
@@ -138,7 +138,7 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
 TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw "Handler begin failed"; }
+        if (!handler->begin(*testStream)) { throw "Handler begin failed"; }
 
         // Just wait a bit
         vTaskDelay(pdMS_TO_TICKS(100));

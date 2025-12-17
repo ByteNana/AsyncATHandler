@@ -35,6 +35,7 @@ class SerialCommunicator : public Stream {
   void flush() override;
   size_t write(uint8_t) override;
   size_t write(const uint8_t *buffer, size_t size) override;
+  void mockResponseWithDelay(const std::string& data, uint32_t delayMs = 50) { InjectDataWithDelay(mockStream, data, delayMs); }
 };
 
 SerialCommunicator::SerialCommunicator() {

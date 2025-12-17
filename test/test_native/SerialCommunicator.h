@@ -1,16 +1,20 @@
 #pragma once
 
+#ifdef ESP32
 #include <Arduino.h>
-#include <HardwareSerial.h>
+#include <Peripherals.h>
+#endif  // ESP32
 
-#include "SerialCommunicator.h"
-#include "common.h"
-
-// #define ESP32 1
+#include "common.h" // Assuming common.h brings in MockStream or defines it.
+#include "Stream.h" // For the Stream class. It is already present in common.h but lets keep it explicit for now.
 
 class SerialCommunicator : public Stream {
  private:
-  Stream *hardwareStream = nullptr;
+#ifdef ESP32
+  HardwareSerial *hardwareStream = nullptr;
+#else
+  Stream *hardwareStream = nullptr; // For native, it's a generic Stream
+#endif
   MockStream *mockStream = nullptr;
   Stream *activeStream = nullptr;  // points to hardwareStream or mockStream
 
@@ -38,20 +42,26 @@ SerialCommunicator::SerialCommunicator() {
   mockStream->SetupDefaults();
 
 #ifdef ESP32
-  hardwareStream = new HardwareSerial(1);
-  hardwareStream->begin(115200);
+  startPeripherals();
+  SERIAL_PORT_UART_MODEM.setTxBufferSize(2048);
+  SERIAL_PORT_UART_MODEM.setRxBufferSize(2048);
+  SERIAL_PORT_UART_MODEM.begin(115200, SERIAL_8N1, UART_RX_MOD_PIN, UART_TX_MOD_PIN);
 
-  activeStream = hardwareStream;
+  expander1.digitalWrite(MCP1_gsm_pwrkey, HIGH);
+  delay(1000);
+  expander1.digitalWrite(MCP1_gsm_pwrkey, LOW);
+  delay(5000);
+
+  activeStream = &SERIAL_PORT_UART_MODEM;
 #else
-  activeStream = mockStream;
+  activeStream = mockStream; // For native, use mock stream by default
 #endif  // ESP32
 }
 
 SerialCommunicator::~SerialCommunicator() {
-  if (hardwareStream) {
-    delete hardwareStream;
-    hardwareStream = nullptr;
-  }
+  // hardwareStream is only allocated for ESP32
+  // and is not owned by this class in that case (it's a global SERIAL_PORT_UART_MODEM)
+  // so no need to delete it.
 
   delete mockStream;
   mockStream = nullptr;
@@ -75,12 +85,12 @@ void SerialCommunicator::flush() { activeStream->flush(); }
 
 size_t SerialCommunicator::write(uint8_t c) {
   size_t result = activeStream->write(c);
-  if (hardwareStream) { mockStream->write(c); }
+  if (activeStream != mockStream) { mockStream->write(c); }
   return result;
 }
 
 size_t SerialCommunicator::write(const uint8_t *buffer, size_t size) {
   size_t result = activeStream->write(buffer, size);
-  if (hardwareStream) { mockStream->write(buffer, size); }
+  if (activeStream != mockStream) { mockStream->write(buffer, size); }
   return result;
 }

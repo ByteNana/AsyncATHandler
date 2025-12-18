@@ -23,7 +23,9 @@ class SerialCommunicator : public Stream {
   Stream *getActiveStream() { return activeStream; }
 
   void mockResponse(const std::string &data);
-  void mockResponseWithDelay(const std::string& data, uint32_t delayMs = 50) { InjectDataWithDelay(mockStream, data, delayMs); }
+  void mockResponseWithDelay(const std::string &data, uint32_t delayMs = 50) {
+    InjectDataWithDelay(mockStream, data, delayMs);
+  }
   void ClearSentData();
   std::string GetSentData();
 
@@ -58,9 +60,9 @@ SerialCommunicator::SerialCommunicator() {
 }
 
 SerialCommunicator::~SerialCommunicator() {
-  #ifdef ESP32
+#ifdef ESP32
   SERIAL_PORT_UART_MODEM.end();
-  #endif  // ESP32
+#endif  // ESP32
 
   delete mockStream;
   mockStream = nullptr;

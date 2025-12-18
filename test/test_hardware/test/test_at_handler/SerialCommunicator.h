@@ -58,16 +58,18 @@ SerialCommunicator::SerialCommunicator() {
 }
 
 SerialCommunicator::~SerialCommunicator() {
-  #ifdef ESP32
+#ifdef ESP32
   SERIAL_PORT_UART_MODEM.end();
-  #endif  // ESP32
+#endif  // ESP32
 
   delete mockStream;
   mockStream = nullptr;
 }
 
 void SerialCommunicator::mockResponse(const std::string &data) { mockStream->InjectRxData(data); }
-void SerialCommunicator::mockResponseWithDelay(const std::string& data, uint32_t delayMs = 50) { InjectDataWithDelay(mockStream, data, delayMs); }
+void SerialCommunicator::mockResponseWithDelay(const std::string &data, uint32_t delayMs = 50) {
+  InjectDataWithDelay(mockStream, data, delayMs);
+}
 
 void SerialCommunicator::ClearSentData() {
   if (mockStream) { mockStream->ClearTxData(); }

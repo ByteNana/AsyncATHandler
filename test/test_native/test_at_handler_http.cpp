@@ -260,4 +260,4 @@ TEST_F(AsyncATHandlerHTTPTest, SendHttpDataChunked) {
   EXPECT_TRUE(testResult);
 }
 
-ENV_BONES
+ENV_BONES();

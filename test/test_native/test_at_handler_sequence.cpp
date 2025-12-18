@@ -282,4 +282,4 @@ TEST_F(SequenceTest, ComplexATSequenceWithURC) {
   EXPECT_TRUE(testResult);
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES();

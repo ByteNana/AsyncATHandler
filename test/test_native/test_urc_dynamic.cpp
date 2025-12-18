@@ -121,4 +121,4 @@ TEST_F(AsyncATHandlerURCTest, MultipleHandlersIndependent) {
   EXPECT_TRUE(ok);
 }
 
-ENV_BONES
+ENV_BONES();

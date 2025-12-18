@@ -188,4 +188,4 @@ TEST_F(AsyncATHandlerAdvancedTest, UnsolicitedResponseHandling) {
   EXPECT_TRUE(testResult);
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES();

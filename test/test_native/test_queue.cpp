@@ -108,4 +108,4 @@ TEST_F(QueueTest, IntBlockingWithTimeout) {
   vQueueDelete(q);
 }
 
-ENV_BONES
+ENV_BONES();

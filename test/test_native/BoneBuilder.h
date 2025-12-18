@@ -17,6 +17,8 @@
   ENV_BONES_SETUP() \
   ENV_BONES_LOOP()
 
-#endif  // ESP32
+#else
 
-#define ENV_BONES FREERTOS_TEST_MAIN()
+#define ENV_BONES() FREERTOS_TEST_MAIN()
+
+#endif  // ESP32

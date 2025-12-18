@@ -171,4 +171,4 @@ TEST_F(AsyncATHandlerPromiseTest, MultiplePromises) {
   EXPECT_TRUE(testResult);
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES();

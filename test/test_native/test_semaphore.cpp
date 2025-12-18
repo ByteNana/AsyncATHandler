@@ -49,4 +49,4 @@ TEST_F(SemaphoreTest, BlockingTake) {
   vSemaphoreDelete(s);
 }
 
-ENV_BONES
+ENV_BONES();

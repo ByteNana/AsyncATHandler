@@ -102,4 +102,4 @@ TEST_F(TaskTest, ExternalTaskDeletion) {
   EXPECT_TRUE(true) << "External task deletion completed";
 }
 
-ENV_BONES
+ENV_BONES();

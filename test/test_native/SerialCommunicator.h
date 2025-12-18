@@ -1,3 +1,4 @@
+#define ESP32 1
 #pragma once
 
 #ifdef ESP32
@@ -5,15 +6,13 @@
 #include <Peripherals.h>
 #endif  // ESP32
 
-#include "common.h" // Assuming common.h brings in MockStream or defines it.
-#include "Stream.h" // For the Stream class. It is already present in common.h but lets keep it explicit for now.
-
+#include "common.h"
 class SerialCommunicator : public Stream {
  private:
 #ifdef ESP32
   HardwareSerial *hardwareStream = nullptr;
 #else
-  Stream *hardwareStream = nullptr; // For native, it's a generic Stream
+  Stream *hardwareStream = nullptr;  // For native, it's a generic Stream
 #endif
   MockStream *mockStream = nullptr;
   Stream *activeStream = nullptr;  // points to hardwareStream or mockStream
@@ -35,7 +34,6 @@ class SerialCommunicator : public Stream {
   void flush() override;
   size_t write(uint8_t) override;
   size_t write(const uint8_t *buffer, size_t size) override;
-  void mockResponseWithDelay(const std::string& data, uint32_t delayMs = 50) { InjectDataWithDelay(mockStream, data, delayMs); }
 };
 
 SerialCommunicator::SerialCommunicator() {
@@ -55,14 +53,14 @@ SerialCommunicator::SerialCommunicator() {
 
   activeStream = &SERIAL_PORT_UART_MODEM;
 #else
-  activeStream = mockStream; // For native, use mock stream by default
+  activeStream = mockStream;  // For native, use mock stream by default
 #endif  // ESP32
 }
 
 SerialCommunicator::~SerialCommunicator() {
-  // hardwareStream is only allocated for ESP32
-  // and is not owned by this class in that case (it's a global SERIAL_PORT_UART_MODEM)
-  // so no need to delete it.
+  #ifdef ESP32
+  SERIAL_PORT_UART_MODEM.end();
+  #endif  // ESP32
 
   delete mockStream;
   mockStream = nullptr;

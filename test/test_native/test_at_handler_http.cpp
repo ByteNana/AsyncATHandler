@@ -12,7 +12,7 @@
 using ::testing::NiceMock;
 
 class AsyncATHandlerHTTPTest : public FreeRTOSTest {
- protected:
+ public:
   AsyncATHandler* handler;
   SerialCommunicator* testStream;
 

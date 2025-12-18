@@ -15,9 +15,11 @@
 using ::testing::NiceMock;
 
 class AsyncATHandlerURCTest : public FreeRTOSTest {
- protected:
+ public:
   SerialCommunicator* testStream = nullptr;
   AsyncATHandler* handler = nullptr;
+
+ protected:
 
   void SetUp() override {
     FreeRTOSTest::SetUp();

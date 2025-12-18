@@ -25,9 +25,10 @@ class SequenceTest : public FreeRTOSTest {
     uint32_t delay;
   };
 
- protected:
   SerialCommunicator* testStream;
   AsyncATHandler* handler;
+
+ protected:
 
   void SetUp() override {
     FreeRTOSTest::SetUp();

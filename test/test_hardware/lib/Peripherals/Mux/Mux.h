@@ -22,5 +22,5 @@ class Muxs {
  public:
   static void begin();
 
-  Muxs(MuxAddress address) : mux_address(address){};
+  Muxs(MuxAddress address) : mux_address(address) {};
 };

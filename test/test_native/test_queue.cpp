@@ -4,8 +4,8 @@
 #include <chrono>
 #include <thread>
 
-#include "common.h"
 #include "BoneBuilder.h"
+#include "common.h"
 
 class QueueTest : public FreeRTOSTest {};
 

@@ -4,12 +4,11 @@
 #include <chrono>
 #include <iostream>
 
+#include "BoneBuilder.h"
+#include "SerialCommunicator.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/FreeRTOSConfig.h"
-
-#include "SerialCommunicator.h"
-#include "BoneBuilder.h"
 
 #define mainCHECK_TASK_PRIORITY (configMAX_PRIORITIES - 2)
 #define mainQUEUE_POLL_PRIORITY (tskIDLE_PRIORITY + 1)

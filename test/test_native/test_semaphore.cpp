@@ -3,11 +3,10 @@
 #include <atomic>
 #include <chrono>
 
+#include "BoneBuilder.h"
 #include "common.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/FreeRTOSConfig.h"
-
-#include "BoneBuilder.h"
 
 class SemaphoreTest : public FreeRTOSTest {};
 

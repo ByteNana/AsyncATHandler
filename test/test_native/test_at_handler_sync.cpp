@@ -7,12 +7,11 @@
 #include <thread>
 
 #include "AsyncATHandler.h"
+#include "BoneBuilder.h"
+#include "SerialCommunicator.h"
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
-
-#include "SerialCommunicator.h"
-#include "BoneBuilder.h"
 
 using ::testing::NiceMock;
 

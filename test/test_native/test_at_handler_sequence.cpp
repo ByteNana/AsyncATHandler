@@ -8,10 +8,10 @@
 #include <thread>
 
 #include "AsyncATHandler.h"
+#include "BoneBuilder.h"
+#include "SerialCommunicator.h"
 #include "Stream.h"
 #include "common.h"
-#include "SerialCommunicator.h"
-#include "BoneBuilder.h"
 #include "esp_log.h"
 
 using ::testing::NiceMock;

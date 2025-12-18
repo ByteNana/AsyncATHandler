@@ -20,7 +20,6 @@ class AsyncATHandlerURCTest : public FreeRTOSTest {
   AsyncATHandler* handler = nullptr;
 
  protected:
-
   void SetUp() override {
     FreeRTOSTest::SetUp();
     testStream = new SerialCommunicator();

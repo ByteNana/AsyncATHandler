@@ -29,7 +29,6 @@ class SequenceTest : public FreeRTOSTest {
   AsyncATHandler* handler;
 
  protected:
-
   void SetUp() override {
     FreeRTOSTest::SetUp();
     testStream = new SerialCommunicator();

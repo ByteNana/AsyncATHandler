@@ -21,7 +21,6 @@ class AsyncATHandlerSyncTest : public FreeRTOSTest {
   SerialCommunicator* testStream;
 
  protected:
-
   void SetUp() override {
     handler = new AsyncATHandler();
     testStream = new SerialCommunicator();

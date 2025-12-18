@@ -23,9 +23,7 @@ class SerialCommunicator : public Stream {
   Stream *getActiveStream() { return activeStream; }
 
   void mockResponse(const std::string &data);
-  void mockResponseWithDelay(const std::string &data, uint32_t delayMs = 50) {
-    InjectDataWithDelay(mockStream, data, delayMs);
-  }
+  void mockResponseWithDelay(const std::string& data, uint32_t delayMs = 50);
   void ClearSentData();
   std::string GetSentData();
 
@@ -83,6 +81,10 @@ int SerialCommunicator::read() { return activeStream->read(); }
 int SerialCommunicator::peek() { return activeStream->peek(); }
 
 void SerialCommunicator::flush() { activeStream->flush(); }
+
+void SerialCommunicator::mockResponseWithDelay(const std::string &data, uint32_t delayMs) {
+  InjectDataWithDelay(mockStream, data, delayMs);
+}
 
 size_t SerialCommunicator::write(uint8_t c) {
   size_t result = activeStream->write(c);

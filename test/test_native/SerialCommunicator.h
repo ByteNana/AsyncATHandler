@@ -23,6 +23,7 @@ class SerialCommunicator : public Stream {
   Stream *getActiveStream() { return activeStream; }
 
   void mockResponse(const std::string &data);
+  void mockResponseWithDelay(const std::string& data, uint32_t delayMs = 50) { InjectDataWithDelay(mockStream, data, delayMs); }
   void ClearSentData();
   std::string GetSentData();
 

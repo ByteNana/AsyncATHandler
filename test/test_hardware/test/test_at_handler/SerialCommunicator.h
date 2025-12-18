@@ -67,6 +67,7 @@ SerialCommunicator::~SerialCommunicator() {
 }
 
 void SerialCommunicator::mockResponse(const std::string &data) { mockStream->InjectRxData(data); }
+void SerialCommunicator::mockResponseWithDelay(const std::string& data, uint32_t delayMs = 50) { InjectDataWithDelay(mockStream, data, delayMs); }
 
 void SerialCommunicator::ClearSentData() {
   if (mockStream) { mockStream->ClearTxData(); }

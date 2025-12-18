@@ -17,6 +17,9 @@ using ::testing::NiceMock;
 
 class AsyncATHandlerPromiseTest : public FreeRTOSTest {
  protected:
+  SerialCommunicator* testStream = nullptr;
+  AsyncATHandler* handler = nullptr;
+
   void SetUp() override {
     FreeRTOSTest::SetUp();
     testStream = new SerialCommunicator();
@@ -43,10 +46,6 @@ class AsyncATHandlerPromiseTest : public FreeRTOSTest {
     }
     FreeRTOSTest::TearDown();
   }
-
- public:
-  SerialCommunicator* testStream = nullptr;
-  AsyncATHandler* handler = nullptr;
 };
 
 // TEST 1: Basic - Just Promise Creation/Deletion

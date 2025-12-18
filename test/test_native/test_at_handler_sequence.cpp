@@ -18,8 +18,6 @@ using ::testing::NiceMock;
 
 class SequenceTest : public FreeRTOSTest {
  public:
-  SerialCommunicator* testStream;
-
   struct ResponderData {
     SequenceTest* test;
     std::string command;
@@ -28,6 +26,7 @@ class SequenceTest : public FreeRTOSTest {
   };
 
  protected:
+  SerialCommunicator* testStream;
   AsyncATHandler* handler;
 
   void SetUp() override {

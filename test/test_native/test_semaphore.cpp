@@ -7,6 +7,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/FreeRTOSConfig.h"
 
+#include "BoneBuilder.h"
+
 class SemaphoreTest : public FreeRTOSTest {};
 
 TEST_F(SemaphoreTest, BinaryBasic) {
@@ -48,4 +50,4 @@ TEST_F(SemaphoreTest, BlockingTake) {
   vSemaphoreDelete(s);
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES

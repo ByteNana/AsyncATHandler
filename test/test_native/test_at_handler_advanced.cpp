@@ -8,6 +8,8 @@
 #include <thread>
 
 #include "AsyncATHandler.h"
+#include "BoneBuilder.h"
+#include "SerialCommunicator.h"
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
@@ -18,8 +20,7 @@ class AsyncATHandlerAdvancedTest : public FreeRTOSTest {
  protected:
   void SetUp() override {
     FreeRTOSTest::SetUp();
-    mockStream = new NiceMock<MockStream>();
-    mockStream->SetupDefaults();
+    testStream = new SerialCommunicator();
     handler = new AsyncATHandler();
   }
 
@@ -37,26 +38,26 @@ class AsyncATHandlerAdvancedTest : public FreeRTOSTest {
       delete handler;
       handler = nullptr;
     }
-    if (mockStream) {
-      delete mockStream;
-      mockStream = nullptr;
+    if (testStream) {
+      delete testStream;
+      testStream = nullptr;
     }
     FreeRTOSTest::TearDown();
   }
 
  public:
-  NiceMock<MockStream>* mockStream = nullptr;
+  SerialCommunicator* testStream = nullptr;
   AsyncATHandler* handler = nullptr;
 };
 
 TEST_F(AsyncATHandlerAdvancedTest, SimpleSyncCommand) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+        if (!handler->begin(*testStream)) throw std::runtime_error("Handler begin failed");
 
         vTaskDelay(pdMS_TO_TICKS(100));
 
-        InjectDataWithDelay(mockStream, "AT+TEST\r\nOK\r\n", 100);
+        testStream->mockResponseWithDelay("AT+TEST\r\nOK\r\n", 100);
 
         String response;
         bool success = handler->sendSync("AT+TEST", response, 2000);
@@ -77,7 +78,7 @@ TEST_F(AsyncATHandlerAdvancedTest, SimpleSyncCommand) {
 TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+        if (!handler->begin(*testStream)) throw std::runtime_error("Handler begin failed");
 
         vTaskDelay(pdMS_TO_TICKS(100));
 
@@ -90,8 +91,8 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
           auto* data = static_cast<ResponderData*>(pvParameters);
           vTaskDelay(pdMS_TO_TICKS(100));
 
-          data->test->mockStream->InjectRxData("AT+VAR\r\n");
-          data->test->mockStream->InjectRxData("OK\r\n");
+          data->test->testStream->mockResponse("AT+VAR\r\n");
+          data->test->testStream->mockResponse("OK\r\n");
 
           data->complete = true;
           vTaskDelete(nullptr);
@@ -102,7 +103,7 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
             responderTask, "ResponderTask", configMINIMAL_STACK_SIZE * 2, &responderData, 1,
             &responderHandle);
 
-        mockStream->ClearTxData();
+        testStream->ClearSentData();
 
         log_d("[Test] Testing variadic template: sendCommand(\"AT+\", \"VAR\")");
 
@@ -116,7 +117,7 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
         while (!responderData.complete.load()) { vTaskDelay(pdMS_TO_TICKS(10)); }
         vTaskDelay(pdMS_TO_TICKS(100));
 
-        std::string sentData = mockStream->GetTxData();
+        std::string sentData = testStream->GetSentData();
         log_d("[Response] Sent data: '%s'", sentData.c_str());
 
         if (!waitResult) { throw std::runtime_error("Promise timed out"); }
@@ -153,7 +154,7 @@ static String g_unsolicitedData = "";
 TEST_F(AsyncATHandlerAdvancedTest, UnsolicitedResponseHandling) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+        if (!handler->begin(*testStream)) throw std::runtime_error("Handler begin failed");
 
         vTaskDelay(pdMS_TO_TICKS(100));
 
@@ -170,7 +171,7 @@ TEST_F(AsyncATHandlerAdvancedTest, UnsolicitedResponseHandling) {
 
         vTaskDelay(pdMS_TO_TICKS(100));
 
-        mockStream->InjectRxData("+CMT: \"+1234567890\",\"\",\"24/01/15,10:30:00\"\r\n");
+        testStream->mockResponse("+CMT: \"+1234567890\",\"\",\"24/01/15,10:30:00\"\r\n");
         vTaskDelay(pdMS_TO_TICKS(500));
 
         log_d("[Test] Checking if callback was called...");

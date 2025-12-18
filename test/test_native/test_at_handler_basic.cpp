@@ -1,12 +1,9 @@
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <atomic>
-#include <chrono>
-#include <iostream>
-#include <thread>
+#include <memory>
 
 #include "AsyncATHandler.h"
+#include "BoneBuilder.h"
 #include "SerialCommunicator.h"
 #include "Stream.h"
 #include "common.h"
@@ -160,4 +157,4 @@ TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
   EXPECT_TRUE(testResult);
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES

@@ -10,21 +10,29 @@
 #include "AsyncATHandler.h"
 #include "Stream.h"
 #include "common.h"
+#include "SerialCommunicator.h"
+#include "BoneBuilder.h"
 #include "esp_log.h"
 
 using ::testing::NiceMock;
 
 class SequenceTest : public FreeRTOSTest {
  public:
-  NiceMock<MockStream>* mockStream;
+  SerialCommunicator* testStream;
+
+  struct ResponderData {
+    SequenceTest* test;
+    std::string command;
+    std::string response;
+    uint32_t delay;
+  };
 
  protected:
   AsyncATHandler* handler;
 
   void SetUp() override {
     FreeRTOSTest::SetUp();
-    mockStream = new NiceMock<MockStream>();
-    mockStream->SetupDefaults();
+    testStream = new SerialCommunicator();
     handler = new AsyncATHandler();
   }
 
@@ -38,33 +46,26 @@ class SequenceTest : public FreeRTOSTest {
       }
       bool success = CleanupATHandler(handler);
       if (!success) { log_w("Handler teardown may have failed"); }
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      delay(200);
       delete handler;
       handler = nullptr;
     }
-    if (mockStream) {
-      delete mockStream;
-      mockStream = nullptr;
+    if (testStream) {
+      delete testStream;
+      testStream = nullptr;
     }
     FreeRTOSTest::TearDown();
   }
 
   void InjectCommandResponse(
       const std::string& command, const std::string& response, uint32_t delayMs = 50) {
-    struct ResponderData {
-      SequenceTest* test;
-      std::string command;
-      std::string response;
-      uint32_t delay;
-    };
-
     auto* responderData = new ResponderData{this, command, response, delayMs};
 
     auto responderTask = [](void* pvParameters) {
       auto* data = static_cast<ResponderData*>(pvParameters);
       vTaskDelay(pdMS_TO_TICKS(data->delay));
-      data->test->mockStream->InjectRxData(data->command + "\r\n");
-      data->test->mockStream->InjectRxData(data->response + "\r\n");
+      data->test->testStream->mockResponse(data->command + "\r\n");
+      data->test->testStream->mockResponse(data->response + "\r\n");
       delete data;
       vTaskDelete(nullptr);
     };
@@ -79,7 +80,7 @@ class SequenceTest : public FreeRTOSTest {
 TEST_F(SequenceTest, GPRSConnectSequence) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
 
         // Step 1: Deactivate context
         InjectCommandResponse("AT+QIDEACT=1", "OK", 100);
@@ -139,7 +140,7 @@ TEST_F(SequenceTest, GPRSConnectSequence) {
 TEST_F(SequenceTest, GPRSConnectSequenceWithErrors) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
 
         // Step 1: Deactivate context - success
         InjectCommandResponse("AT+QIDEACT=1", "OK", 100);
@@ -178,7 +179,7 @@ TEST_F(SequenceTest, GPRSConnectSequenceWithErrors) {
 TEST_F(SequenceTest, GPRSConnectSequenceWithTimeout) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
 
         // Step 1: Deactivate context - success
         InjectCommandResponse("AT+QIDEACT=1", "OK", 100);
@@ -204,7 +205,7 @@ TEST_F(SequenceTest, GPRSConnectSequenceWithTimeout) {
 TEST_F(SequenceTest, ComplexATSequenceWithURC) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
 
         // Step 1: Query network registration
         std::atomic<bool> urcReceived{false};
@@ -219,21 +220,23 @@ TEST_F(SequenceTest, ComplexATSequenceWithURC) {
 
         // Use a precise responder task to ensure correct line order
         auto complexResponderTask = [](void* pvParameters) {
-          auto* stream = static_cast<NiceMock<MockStream>*>(pvParameters);
+          auto* data = static_cast<ResponderData*>(pvParameters);
           vTaskDelay(pdMS_TO_TICKS(50));
-          stream->InjectRxData("AT+CREG?\r\n");  // Command Echo
+          data->test->testStream->mockResponse("AT+CREG?\r\n");  // Command Echo
           vTaskDelay(pdMS_TO_TICKS(20));
-          stream->InjectRxData("+CREG: 2\r\n");  // URC (unsolicited)
+          data->test->testStream->mockResponse("+CREG: 2\r\n");  // URC (unsolicited)
           vTaskDelay(pdMS_TO_TICKS(20));
-          stream->InjectRxData("+CREG: 0,1\r\n");  // Expected Response
-          stream->InjectRxData("OK\r\n");          // Final Response
+          data->test->testStream->mockResponse("+CREG: 0,1\r\n");  // Expected Response
+          data->test->testStream->mockResponse("OK\r\n");          // Final Response
+          delete data;
           vTaskDelete(nullptr);
         };
 
         TaskHandle_t complexResponderHandle = nullptr;
+        auto* responderData = new ResponderData{this, "", "", 0};
         xTaskCreate(
-            complexResponderTask, "ComplexResponder", configMINIMAL_STACK_SIZE * 3, mockStream, 1,
-            &complexResponderHandle);
+            complexResponderTask, "ComplexResponder", configMINIMAL_STACK_SIZE * 3, responderData,
+            1, &complexResponderHandle);
 
         ATPromise* promise1 = handler->sendCommand("AT+CREG?");
         if (!promise1) { throw std::runtime_error("Step 1 failed: Promise creation failed"); }

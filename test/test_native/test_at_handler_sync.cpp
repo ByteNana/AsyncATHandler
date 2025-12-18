@@ -11,15 +11,19 @@
 #include "common.h"
 #include "esp_log.h"
 
+#include "SerialCommunicator.h"
+#include "BoneBuilder.h"
+
 using ::testing::NiceMock;
 
 class AsyncATHandlerSyncTest : public FreeRTOSTest {
  protected:
+  AsyncATHandler* handler;
+  SerialCommunicator* testStream;
+
   void SetUp() override {
-    FreeRTOSTest::SetUp();
-    mockStream = new NiceMock<MockStream>();
-    mockStream->SetupDefaults();
     handler = new AsyncATHandler();
+    testStream = new SerialCommunicator();
   }
 
   void TearDown() override {
@@ -36,25 +40,20 @@ class AsyncATHandlerSyncTest : public FreeRTOSTest {
       delete handler;
       handler = nullptr;
     }
-    if (mockStream) {
-      log_w("Cleaning up mockStream");
-      delete mockStream;
-      mockStream = nullptr;
+    if (testStream) {
+      delete testStream;
+      testStream = nullptr;
     }
     FreeRTOSTest::TearDown();
   }
-
- public:
-  NiceMock<MockStream>* mockStream;
-  AsyncATHandler* handler;
 };
 
 TEST_F(AsyncATHandlerSyncTest, SendSyncCommandWithOKResponse) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+        if (!handler->begin(*testStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay(mockStream, "AT\r\nOK\r\n", 50);
+        testStream->mockResponseWithDelay("AT\r\nOK\r\n", 50);
 
         String response;
         bool sendResult = handler->sendSync("AT", response, 1000);
@@ -73,7 +72,7 @@ TEST_F(AsyncATHandlerSyncTest, SendSyncCommandWithOKResponse) {
 TEST_F(AsyncATHandlerSyncTest, SendSyncCommandWithTimeout) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+        if (!handler->begin(*testStream)) throw std::runtime_error("Handler begin failed");
 
         String response;
         bool sendResult = handler->sendSync("AT+TIMEOUT", response, 100);
@@ -90,9 +89,9 @@ TEST_F(AsyncATHandlerSyncTest, SendSyncCommandWithTimeout) {
 TEST_F(AsyncATHandlerSyncTest, SendSyncCommandWithErrorResponse) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+        if (!handler->begin(*testStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay(mockStream, "AT+FAIL\r\nERROR\r\n", 50);
+        testStream->mockResponseWithDelay("AT+FAIL\r\nERROR\r\n", 50);
 
         String response;
         bool sendResult = handler->sendSync("AT+FAIL", response, 1000);
@@ -111,9 +110,9 @@ TEST_F(AsyncATHandlerSyncTest, SendSyncCommandWithErrorResponse) {
 TEST_F(AsyncATHandlerSyncTest, SendCommandWithoutResponseParameter) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+        if (!handler->begin(*testStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay(mockStream, "AT\r\nOK\r\n", 50);
+        testStream->mockResponse("AT\r\nOK\r\n");
 
         bool sendResult = handler->sendSync("AT", 1000);
 
@@ -127,11 +126,12 @@ TEST_F(AsyncATHandlerSyncTest, SendCommandWithoutResponseParameter) {
 TEST_F(AsyncATHandlerSyncTest, ResponseContainsAllLines) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+        if (!handler->begin(*testStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay(
-            mockStream,
-            "+CGMI: SIMCOM\r\nManufacturer: SIMCOM INCORPORATED\r\nModel: SIM7600E\r\nOK\r\n", 50);
+        testStream->mockResponseWithDelay(
+            "AT+CGMI\r\n+CGMI: SIMCOM\r\nManufacturer: SIMCOM INCORPORATED\r\n"
+            "Model: SIM7600E\r\nOK\r\n",
+            50);
 
         String response;
         bool sendResult = handler->sendSync("AT+CGMI", response, 1000);
@@ -152,10 +152,9 @@ TEST_F(AsyncATHandlerSyncTest, ResponseContainsAllLines) {
 TEST_F(AsyncATHandlerSyncTest, TimeoutStillReturnsCollectedResponse) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) throw std::runtime_error("Handler begin failed");
+        if (!handler->begin(*testStream)) throw std::runtime_error("Handler begin failed");
 
-        InjectDataWithDelay(
-            mockStream,
+        testStream->mockResponseWithDelay(
             "+QISTATE: 0,\"TCP\",\"192.168.1.1\",8080,5000,2,1\r\n"
             "+QISTATE: 1,\"UDP\",\"10.0.0.1\",53,0,0,0\r\n",
             50);

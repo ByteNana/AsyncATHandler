@@ -6,6 +6,8 @@
 #include <thread>
 
 #include "AsyncATHandler.h"
+#include "BoneBuilder.h"
+#include "SerialCommunicator.h"  // Added this line
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
@@ -16,8 +18,7 @@ class AsyncATHandlerURCTest : public FreeRTOSTest {
  protected:
   void SetUp() override {
     FreeRTOSTest::SetUp();
-    mockStream = new NiceMock<MockStream>();
-    mockStream->SetupDefaults();
+    testStream = new SerialCommunicator();
     handler = new AsyncATHandler();
   }
 
@@ -29,22 +30,22 @@ class AsyncATHandlerURCTest : public FreeRTOSTest {
       delete handler;
       handler = nullptr;
     }
-    if (mockStream) {
-      delete mockStream;
-      mockStream = nullptr;
+    if (testStream) {
+      delete testStream;
+      testStream = nullptr;
     }
     FreeRTOSTest::TearDown();
   }
 
  public:
-  NiceMock<MockStream>* mockStream = nullptr;
+  SerialCommunicator* testStream = nullptr;
   AsyncATHandler* handler = nullptr;
 };
 
 TEST_F(AsyncATHandlerURCTest, RegisterAndTriggerURC) {
   bool ok = runInFreeRTOSTask(
       [this]() {
-        ASSERT_TRUE(handler->begin(*mockStream));
+        ASSERT_TRUE(handler->begin(*testStream));
         vTaskDelay(pdMS_TO_TICKS(50));
 
         std::atomic<bool> called{false};
@@ -56,7 +57,7 @@ TEST_F(AsyncATHandlerURCTest, RegisterAndTriggerURC) {
         });
 
         // Inject a URC line that matches the registered prefix
-        InjectDataWithDelay(mockStream, "+CMTI: \"SM\",1\r\n", 50);
+        testStream->mockResponseWithDelay("+CMTI: \"SM\",1\r\n", 50);
 
         // Wait for it to be processed
         vTaskDelay(pdMS_TO_TICKS(300));
@@ -72,18 +73,17 @@ TEST_F(AsyncATHandlerURCTest, RegisterAndTriggerURC) {
 TEST_F(AsyncATHandlerURCTest, UnregisterStopsCallback) {
   bool ok = runInFreeRTOSTask(
       [this]() {
-        ASSERT_TRUE(handler->begin(*mockStream));
+        ASSERT_TRUE(handler->begin(*testStream));
         vTaskDelay(pdMS_TO_TICKS(50));
 
         std::atomic<int> count{0};
         handler->urc.registerEvent("RING", [&](const String&) { count.fetch_add(1); });
-
-        InjectDataWithDelay(mockStream, "RING\r\n", 20);
+        testStream->mockResponseWithDelay("RING\r\n", 20);
         vTaskDelay(pdMS_TO_TICKS(200));
         ASSERT_EQ(count.load(), 1);
 
         handler->urc.unregisterEvent("RING");
-        InjectDataWithDelay(mockStream, "RING\r\n", 20);
+        testStream->mockResponseWithDelay("RING\r\n", 20);
         vTaskDelay(pdMS_TO_TICKS(200));
         ASSERT_EQ(count.load(), 1) << "Unregistered handler should not fire";
       },
@@ -95,7 +95,7 @@ TEST_F(AsyncATHandlerURCTest, UnregisterStopsCallback) {
 TEST_F(AsyncATHandlerURCTest, MultipleHandlersIndependent) {
   bool ok = runInFreeRTOSTask(
       [this]() {
-        ASSERT_TRUE(handler->begin(*mockStream));
+        ASSERT_TRUE(handler->begin(*testStream));
         vTaskDelay(pdMS_TO_TICKS(50));
 
         std::atomic<int> ringCount{0};
@@ -105,13 +105,13 @@ TEST_F(AsyncATHandlerURCTest, MultipleHandlersIndependent) {
         handler->urc.registerEvent("+CLIP:", [&](const String&) { clipCount.fetch_add(1); });
 
         // Trigger only RING
-        InjectDataWithDelay(mockStream, "RING\r\n", 30);
+        testStream->mockResponseWithDelay("RING\r\n", 30);
         vTaskDelay(pdMS_TO_TICKS(150));
         ASSERT_EQ(ringCount.load(), 1);
         ASSERT_EQ(clipCount.load(), 0);
 
         // Trigger only +CLIP:
-        InjectDataWithDelay(mockStream, "+CLIP: \"+123\",129\r\n", 30);
+        testStream->mockResponseWithDelay("+CLIP: \"+123\",129\r\n", 30);
         vTaskDelay(pdMS_TO_TICKS(150));
         ASSERT_EQ(ringCount.load(), 1);
         ASSERT_EQ(clipCount.load(), 1);
@@ -121,4 +121,4 @@ TEST_F(AsyncATHandlerURCTest, MultipleHandlersIndependent) {
   EXPECT_TRUE(ok);
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES

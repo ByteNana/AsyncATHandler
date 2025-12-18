@@ -5,6 +5,7 @@
 #include <thread>
 
 #include "common.h"
+#include "BoneBuilder.h"
 
 class QueueTest : public FreeRTOSTest {};
 
@@ -107,4 +108,4 @@ TEST_F(QueueTest, IntBlockingWithTimeout) {
   vQueueDelete(q);
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES

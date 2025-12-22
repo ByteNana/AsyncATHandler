@@ -20,11 +20,6 @@
 
 #else
 
-#define ENV_BONES()   \
-  int main(int argc, char** argv) {                                      \
-    ::testing::InitGoogleTest(&argc, argv);                              \
-    ::testing::AddGlobalTestEnvironment(new GlobalSchedulerEnvironment); \
-    return RUN_ALL_TESTS();                                              \
-  }
+#define ENV_BONES() FREERTOS_TEST_MAIN()
 
 #endif  // ESP32

@@ -9,7 +9,6 @@
 
 #include "AsyncATHandler.h"
 #include "SerialCommunicator.h"
-#include "BoneBuilder.h"
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
@@ -162,4 +161,13 @@ TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
   EXPECT_TRUE(testResult);
 }
 
-ENV_BONES();
+void setup() {
+  Serial.begin(115200);
+  ::testing::InitGoogleTest();
+}
+
+void loop() {
+  if (RUN_ALL_TESTS())
+    ;
+  delay(1000);
+}

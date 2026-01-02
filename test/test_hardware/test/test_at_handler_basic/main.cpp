@@ -66,7 +66,9 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
           throw std::runtime_error(std::string("Handler should not have stream initially"));
         }
 
-        if (!handler->begin(*testStream)) { throw std::runtime_error(std::string("Handler begin failed")); }
+        if (!handler->begin(*testStream)) {
+          throw std::runtime_error(std::string("Handler begin failed"));
+        }
 
         // Verify stream is set
         if (handler->getStream() != testStream) {
@@ -74,7 +76,9 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
         }
 
         // Test that we cannot initialize twice
-                if (handler->begin(*testStream)) { throw std::runtime_error(std::string("Should not initialize twice")); }
+        if (handler->begin(*testStream)) {
+          throw std::runtime_error(std::string("Should not initialize twice"));
+        }
       },
       "InitTest", configMINIMAL_STACK_SIZE * 4);
 
@@ -85,7 +89,9 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
 TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*testStream)) { throw std::runtime_error(std::string("Handler begin failed")); }
+        if (!handler->begin(*testStream)) {
+          throw std::runtime_error(std::string("Handler begin failed"));
+        }
 
         // Give handler time to fully initialize
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -142,7 +148,9 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
 TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*testStream)) { throw std::runtime_error(std::string("Handler begin failed")); }
+        if (!handler->begin(*testStream)) {
+          throw std::runtime_error(std::string("Handler begin failed"));
+        }
 
         // Just wait a bit
         vTaskDelay(pdMS_TO_TICKS(100));

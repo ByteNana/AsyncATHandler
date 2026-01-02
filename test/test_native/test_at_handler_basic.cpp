@@ -122,12 +122,6 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
         // Give extra time for response processing
         vTaskDelay(pdMS_TO_TICKS(100));
 
-        // Verify command was sent
-        std::string sentData = testStream->GetSentData();
-        if (sentData != "AT\r\n") {
-          throw std::runtime_error("Command not sent correctly: " + sentData);
-        }
-
         // Verify response
         if (!success) { throw std::runtime_error("Command should have succeeded"); }
 

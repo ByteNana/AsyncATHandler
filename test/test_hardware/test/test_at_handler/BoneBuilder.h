@@ -6,20 +6,26 @@
   void setup() {                 \
     Serial.begin(115200);        \
     ::testing::InitGoogleTest(); \
-  }
+    RUN_ALL_TESTS();             \
+  }                              \
 
-#define ENV_BONES_LOOP() \
-  void loop() {          \
-    RUN_ALL_TESTS();     \
-    delay(1000);         \
+#define ENV_BONES_LOOP()                     \
+  void loop() {                              \
   }
 
 #define ENV_BONES() \
   ENV_BONES_SETUP() \
   ENV_BONES_LOOP()
 
-#else
+
+#define NATIVE_ONLY(test)
+#define HARDWARE_ONLY(test) (test)
+
+#else /* native */
 
 #define ENV_BONES() FREERTOS_TEST_MAIN()
+
+#define NATIVE_ONLY(test) test
+#define HARDWARE_ONLY(test)
 
 #endif  // ESP32

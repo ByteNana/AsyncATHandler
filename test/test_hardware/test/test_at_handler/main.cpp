@@ -5,9 +5,11 @@
 #include <chrono>
 #include <iostream>
 #include <string>  // Added for std::string
+#include <memory>
 #include <thread>
 
 #include "AsyncATHandler.h"
+#include "BoneBuilder.h"
 #include "SerialCommunicator.h"
 #include "Stream.h"
 #include "common.h"
@@ -161,13 +163,4 @@ TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
   EXPECT_TRUE(testResult);
 }
 
-void setup() {
-  Serial.begin(115200);
-  ::testing::InitGoogleTest();
-}
-
-void loop() {
-  if (RUN_ALL_TESTS())
-    ;
-  delay(1000);
-}
+ENV_BONES();

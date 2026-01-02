@@ -73,8 +73,6 @@ void SerialCommunicator::ClearSentData() {
   if (mockStream) { mockStream->ClearTxData(); }
 }
 
-std::string SerialCommunicator::GetSentData() { return mockStream->GetTxData(); }
-
 int SerialCommunicator::available() { return activeStream->available(); }
 
 int SerialCommunicator::read() { return activeStream->read(); }

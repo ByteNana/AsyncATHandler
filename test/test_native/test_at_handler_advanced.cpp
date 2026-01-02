@@ -131,11 +131,11 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
         log_d("[Response] Response: '%s'", response.c_str());
 
         if (sentData != "AT+VAR\r\n") {
-          throw std::runtime_error("Command not sent correctly: ") + sentData.c_str();
+          throw std::runtime_error(std::string("Command not sent correctly: ") + sentData.c_str());
         }
 
         if (response.indexOf("OK") == -1) {
-          throw std::runtime_error("Response should contain OK: ") + response.c_str();
+          throw std::runtime_error(std::string("Response should contain OK: ") + response.c_str());
         }
 
         // FIX: Safely pop the promise
@@ -178,7 +178,7 @@ TEST_F(AsyncATHandlerAdvancedTest, UnsolicitedResponseHandling) {
         if (!g_callbackCalled.load()) { throw std::runtime_error("URC callback not called"); }
 
         if (!g_unsolicitedData.startsWith("+CMT:")) {
-          throw std::runtime_error("Incorrect URC data: " + g_unsolicitedData);
+          throw std::runtime_error(std::string("Incorrect URC data: ") + g_unsolicitedData.c_str());
         }
 
         log_d("[Test] URC handling successful: '%s'", g_unsolicitedData.c_str());

@@ -131,11 +131,11 @@ TEST_F(AsyncATHandlerAdvancedTest, VariadicSendCommandHelper) {
         log_d("[Response] Response: '%s'", response.c_str());
 
         if (sentData != "AT+VAR\r\n") {
-          throw std::runtime_error("Command not sent correctly: " + sentData);
+          throw std::runtime_error("Command not sent correctly: ") + sentData.c_str();
         }
 
         if (response.indexOf("OK") == -1) {
-          throw std::runtime_error("Response should contain OK: " + response);
+          throw std::runtime_error("Response should contain OK: ") + response.c_str();
         }
 
         // FIX: Safely pop the promise

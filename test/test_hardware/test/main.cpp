@@ -5,6 +5,10 @@
 
 #include "BoneBuilder.h"
 
-// ENV_BONES() will expand to the setup() and loop() functions
-// necessary to run the tests on the Arduino framework.
-ENV_BONES()
+void setup() {
+  Serial.begin(115200);
+  ::testing::InitGoogleTest();
+  RUN_ALL_TESTS();
+}
+
+void loop() {}

@@ -6,7 +6,7 @@
 #include <Peripherals.h>
 #endif  // ESP32
 
-#include "common.h"
+#include <common.h>
 class SerialCommunicator : public Stream {
  private:
 #ifdef ESP32

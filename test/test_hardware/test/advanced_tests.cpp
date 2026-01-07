@@ -1,3 +1,6 @@
+#include <BoneBuilder.h>
+#include <SerialCommunicator.h>
+#include <common.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -8,10 +11,7 @@
 #include <thread>
 
 #include "AsyncATHandler.h"
-#include "BoneBuilder.h"
-#include "SerialCommunicator.h"
 #include "Stream.h"
-#include "common.h"
 #include "esp_log.h"
 
 using ::testing::NiceMock;

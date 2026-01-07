@@ -2,6 +2,7 @@
 
 #include <freertos/FreeRTOSConfig.h>
 #include <gtest/gtest.h>
+#include <mocks.h>
 
 #include <atomic>
 #include <chrono>
@@ -13,7 +14,6 @@
 #include "Stream.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
-#include "mocks.h"
 
 class GlobalSchedulerEnvironment : public ::testing::Environment {
  private:

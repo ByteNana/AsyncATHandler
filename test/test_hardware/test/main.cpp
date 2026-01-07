@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <gtest/gtest.h>
+
 #include "BoneBuilder.h"
 
 // ENV_BONES() will expand to the setup() and loop() functions

@@ -67,7 +67,9 @@ inline SerialCommunicator::~SerialCommunicator() {
   mockStream = nullptr;
 }
 
-inline void SerialCommunicator::mockResponse(const std::string &data) { mockStream->InjectRxData(data); }
+inline void SerialCommunicator::mockResponse(const std::string &data) {
+  mockStream->InjectRxData(data);
+}
 
 inline void SerialCommunicator::ClearSentData() {
   if (mockStream) { mockStream->ClearTxData(); }

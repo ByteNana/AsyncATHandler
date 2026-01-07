@@ -180,5 +180,3 @@ NATIVE_ONLY(TEST_F(AsyncATHandlerAdvancedTest, UnsolicitedResponseHandling) {
 
   EXPECT_TRUE(testResult);
 });
-
-ENV_BONES();

@@ -161,5 +161,3 @@ TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
 
   EXPECT_TRUE(testResult);
 }
-
-ENV_BONES();

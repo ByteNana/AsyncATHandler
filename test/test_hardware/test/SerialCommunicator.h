@@ -37,7 +37,7 @@ class SerialCommunicator : public Stream {
   size_t write(const uint8_t *buffer, size_t size) override;
 };
 
-SerialCommunicator::SerialCommunicator() {
+inline SerialCommunicator::SerialCommunicator() {
   mockStream = new ::testing::NiceMock<MockStream>();
   mockStream->SetupDefaults();
 
@@ -58,7 +58,7 @@ SerialCommunicator::SerialCommunicator() {
 #endif  // ESP32
 }
 
-SerialCommunicator::~SerialCommunicator() {
+inline SerialCommunicator::~SerialCommunicator() {
 #ifdef ESP32
   SERIAL_PORT_UART_MODEM.end();
 #endif  // ESP32
@@ -67,31 +67,31 @@ SerialCommunicator::~SerialCommunicator() {
   mockStream = nullptr;
 }
 
-void SerialCommunicator::mockResponse(const std::string &data) { mockStream->InjectRxData(data); }
+inline void SerialCommunicator::mockResponse(const std::string &data) { mockStream->InjectRxData(data); }
 
-void SerialCommunicator::ClearSentData() {
+inline void SerialCommunicator::ClearSentData() {
   if (mockStream) { mockStream->ClearTxData(); }
 }
 
-int SerialCommunicator::available() { return activeStream->available(); }
+inline int SerialCommunicator::available() { return activeStream->available(); }
 
-int SerialCommunicator::read() { return activeStream->read(); }
+inline int SerialCommunicator::read() { return activeStream->read(); }
 
-int SerialCommunicator::peek() { return activeStream->peek(); }
+inline int SerialCommunicator::peek() { return activeStream->peek(); }
 
-void SerialCommunicator::flush() { activeStream->flush(); }
+inline void SerialCommunicator::flush() { activeStream->flush(); }
 
-void SerialCommunicator::mockResponseWithDelay(const std::string &data, uint32_t delayMs) {
+inline void SerialCommunicator::mockResponseWithDelay(const std::string &data, uint32_t delayMs) {
   InjectDataWithDelay(mockStream, data, delayMs);
 }
 
-size_t SerialCommunicator::write(uint8_t c) {
+inline size_t SerialCommunicator::write(uint8_t c) {
   size_t result = activeStream->write(c);
   if (activeStream != mockStream) { mockStream->write(c); }
   return result;
 }
 
-size_t SerialCommunicator::write(const uint8_t *buffer, size_t size) {
+inline size_t SerialCommunicator::write(const uint8_t *buffer, size_t size) {
   size_t result = activeStream->write(buffer, size);
   if (activeStream != mockStream) { mockStream->write(buffer, size); }
   return result;

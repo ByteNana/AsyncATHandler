@@ -16,7 +16,10 @@
 #include "AsyncATHandler.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+
+#ifndef ESP32
 #include "stream/MockStream.h"
+#endif
 
 class GlobalSchedulerEnvironment : public ::testing::Environment {
  private:

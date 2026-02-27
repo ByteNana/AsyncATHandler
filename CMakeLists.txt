@@ -7,7 +7,7 @@ set(CMAKE_PROJECT_VERSION "${PROJECT_VERSION}${PROJECT_VERSION_SUFIX}")
 
 # Config flag to differentiate between embedded vs native build
 option(NATIVE_BUILD "Use mock Arduino headers for native testing" ON)
-option(ASYNCAT_HANDLER_BUILD_TESTS "Build tests" ON)
+option(ASYNCAT_HANDLER_BUILD_TESTS_NATIVE "Build native test executables" OFF)
 option(CLANGD_INDEX_EXAMPLES "Add example sources to compile_commands.json" ON)
 
 # Paths
@@ -21,11 +21,11 @@ include_directories(
   ${LIB_SRC_DIR}
   ${gmock_SOURCE_DIR}/include
   ${gtest_SOURCE_DIR}/include
-  ${Unity_SOURCE_DIR}/src
 )
 
 set(LOG_LEVEL "3" CACHE STRING "Log level (0-5, where 5 is most verbose)")
 set_property(CACHE LOG_LEVEL PROPERTY STRINGS "0" "1" "2" "3" "4" "5")
+add_compile_definitions(LOG_LEVEL=${LOG_LEVEL})
 
 # === LIBRARY ===
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS

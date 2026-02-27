@@ -4,7 +4,7 @@ Welcome to the AsyncATHandler documentation. This project targets ESP32 (Arduino
 
 ## Getting Started
 - Quick start (ESP32): see the README’s "Quick Start" section.
-- PlatformIO hardware tests: `test/test_hardware` folder.
+- PlatformIO hardware tests: `test/` folder.
 
 ## Concepts
 - AsyncATHandler: coordinator and reader task – `./development/AsyncATHandler.md`

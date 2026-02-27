@@ -3,7 +3,7 @@
 #
 # Description: This Makefile provides targets
 # ==============================================================================
-.PHONY: test test-esp32 flash-esp32-test test-esp32-examples test-hybrid
+.PHONY: test test-esp32 flash-esp32-test test-esp32-examples
 
 #=============================================================================
 # Native Targets
@@ -22,7 +22,7 @@ test: build
 ## Test ESP32 build
 test-esp32:
 	@printf  "\033[1;33m🔨 Checking Build for ESP32...\033[0m\n"
-	@pio ci ${HARDW_TEST_DIR}/src/main.cpp  -c ${HARDW_TEST_DIR}/platformio.ini -e ci --lib="."
+	@pio ci ${HARDW_TEST_DIR}/test/main.cpp  -c ${HARDW_TEST_DIR}/platformio.ini -e ci --lib="."
 	@for d in $(EXAMPLE_DIRS); do \
 	  printf "\n\n\033[1;32m▶ $$d \033[0m\n\n"; \
 	  pio ci $$d/src/main.cpp -c $$d/platformio.ini --lib="."; \
@@ -37,10 +37,3 @@ flash-esp32-test: test-esp32
 test-remote-esp32:
 	pio remote --agent IOT01 test -d ${HARDW_TEST_DIR} -e test --upload-port /dev/ttyCarelIR33 --test-port /dev/ttyCarelIR33 -vv
 
-#=============================================================================
-# Hybrid Targets
-#=============================================================================
-test-hybrid: build
-	@printf "\n\033[1;33m🧪 Running Hybrid Tests\033[0m\n\n"
-	@echo "🧪 Running Hybrid tests..."
-	GTEST_COLOR=1 ctest --output-on-failure --test-dir build -V

@@ -6,7 +6,7 @@ SRC_DIRS := src test examples
 EXTENSIONS := c cpp h hpp cc cxx hxx hh
 BUILD_DIR := build
 CCDB := compile_commands.json
-HARDW_TEST_DIR := test/test_hardware
+HARDW_TEST_DIR := test
 
 # ==============================================================================
 # Argument Capture

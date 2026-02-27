@@ -1,6 +1,7 @@
 # === TESTS ===
-if(ASYNCAT_HANDLER_BUILD_TESTS)
-  add_compile_definitions(LOG_LEVEL=${LOG_LEVEL})
+if(ASYNCAT_HANDLER_BUILD_TESTS_NATIVE)
+  include_directories(${Unity_SOURCE_DIR}/src)
+
   enable_testing()
 
   # Only glob test_*.cpp to exclude main.cpp (ESP32-only entry point)

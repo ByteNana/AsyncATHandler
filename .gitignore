@@ -3,3 +3,4 @@ build/
 compile_commands.json
 .pio/
 .DS_Store
+.lefthook-local.yml

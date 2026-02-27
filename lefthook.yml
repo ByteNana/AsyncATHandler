@@ -1,0 +1,17 @@
+# Lefthook configuration
+# https://github.com/evilmartians/lefthook
+#
+# Local overrides: create .lefthook-local.yml (gitignored)
+
+pre-commit:
+  commands:
+    format-check:
+      glob: "*.{c,cpp,h,hpp}"
+      run: just check
+
+pre-push:
+  commands:
+    branch-protection:
+      run: .githooks/branch-protection.sh {push_args}
+    version-validation:
+      run: .githooks/version-validation.sh

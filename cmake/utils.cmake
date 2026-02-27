@@ -25,10 +25,8 @@ if(ASYNCAT_HANDLER_BUILD_TESTS)
 
     target_link_libraries(${EXEC_NAME}
       PRIVATE
-      ArduinoNativeMocks
       AsyncATHandler
       gmock
-      gtest
       gtest_main
       unity
     )

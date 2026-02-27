@@ -14,9 +14,9 @@
 #include <thread>
 
 #include "AsyncATHandler.h"
-#include "Stream.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "stream/MockStream.h"
 
 class GlobalSchedulerEnvironment : public ::testing::Environment {
  private:
@@ -107,7 +107,7 @@ class FreeRTOSTest : public ::testing::Test {
 
 // Common responder task pattern used across multiple AT handler tests
 inline void InjectDataWithDelay(
-    class MockStream* mockStream, const std::string& data, uint32_t delayMs = 50) {
+    MockStream* mockStream, const std::string& data, uint32_t delayMs = 50) {
   struct InjectorData {
     MockStream* stream;
     std::string data;
@@ -130,7 +130,7 @@ inline void InjectDataWithDelay(
 }
 
 // Common teardown pattern for AT handler tests
-inline bool CleanupATHandler(class AsyncATHandler* handler) {
+inline bool CleanupATHandler(AsyncATHandler* handler) {
   return runInFreeRTOSTask([handler]() { handler->end(); }, "TeardownTask");
 }
 

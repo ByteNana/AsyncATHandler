@@ -1,9 +1,9 @@
 // This file is the single entry point for all hardware tests.
+// On native builds, CMake globs only test_*.cpp so this file is excluded.
 
+#ifdef ESP32
 #include <Arduino.h>
 #include <gtest/gtest.h>
-
-#include "BoneBuilder.h"
 
 void setup() {
   Serial.begin(115200);
@@ -12,3 +12,4 @@ void setup() {
 }
 
 void loop() {}
+#endif

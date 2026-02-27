@@ -91,14 +91,14 @@ TEST_F(QueueTest, IntBlockingWithTimeout) {
   xTaskCreate(
       blockingSendTask, "BlockingSend", configMINIMAL_STACK_SIZE, &testData, 1, &taskHandle);
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  delay(10);
   EXPECT_TRUE(testData.attempted);
   EXPECT_FALSE(testData.succeeded);
 
   EXPECT_EQ(xQueueReceive(q, &out, 0), pdTRUE);
   EXPECT_EQ(out, 100);
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  delay(10);
   EXPECT_TRUE(testData.succeeded);
   EXPECT_EQ(uxQueueMessagesWaiting(q), 1u);
 

@@ -36,7 +36,7 @@ class AsyncATHandlerSyncTest : public FreeRTOSTest {
       }
       bool success = CleanupATHandler(handler);
       if (!success) { log_w("Handler teardown may have failed"); }
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      delay(200);
       delete handler;
       handler = nullptr;
     }

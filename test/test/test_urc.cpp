@@ -7,7 +7,7 @@
 
 #include "AsyncATHandler.h"
 #include "BoneBuilder.h"
-#include "SerialCommunicator.h"  // Added this line
+#include "SerialCommunicator.h"
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
@@ -30,7 +30,7 @@ class AsyncATHandlerURCTest : public FreeRTOSTest {
     if (handler) {
       bool success = CleanupATHandler(handler);
       if (!success) { log_w("Handler teardown may have failed"); }
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      delay(100);
       delete handler;
       handler = nullptr;
     }

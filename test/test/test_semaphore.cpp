@@ -39,11 +39,11 @@ TEST_F(SemaphoreTest, BlockingTake) {
   TaskHandle_t taskHandle = nullptr;
   xTaskCreate(
       blockingTakeTask, "BlockingTask", configMINIMAL_STACK_SIZE, &testData, 1, &taskHandle);
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  delay(10);
   EXPECT_TRUE(testData.attempted);
   EXPECT_FALSE(testData.took);
   EXPECT_EQ(xSemaphoreGive(s), pdTRUE);
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  delay(10);
   EXPECT_TRUE(testData.took);
   EXPECT_EQ(xSemaphoreTake(s, 0), pdFALSE);
   vSemaphoreDelete(s);

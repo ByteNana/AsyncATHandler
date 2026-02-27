@@ -2,7 +2,6 @@
 
 #ifdef ESP32
 #include <Arduino.h>
-#include <Peripherals.h>
 #endif  // ESP32
 
 #include "common.h"
@@ -25,7 +24,6 @@ class SerialCommunicator : public Stream {
   void mockResponse(const std::string &data);
   void mockResponseWithDelay(const std::string &data, uint32_t delayMs = 50);
   void ClearSentData();
-  std::string GetSentData();
 
   // Stream interface
   int available() override;
@@ -36,63 +34,56 @@ class SerialCommunicator : public Stream {
   size_t write(const uint8_t *buffer, size_t size) override;
 };
 
-SerialCommunicator::SerialCommunicator() {
+inline SerialCommunicator::SerialCommunicator() {
   mockStream = new ::testing::NiceMock<MockStream>();
   mockStream->SetupDefaults();
 
 #ifdef ESP32
-  startPeripherals();
-  SERIAL_PORT_UART_MODEM.setTxBufferSize(2048);
-  SERIAL_PORT_UART_MODEM.setRxBufferSize(2048);
-  SERIAL_PORT_UART_MODEM.begin(115200, SERIAL_8N1, UART_RX_MOD_PIN, UART_TX_MOD_PIN);
-
-  expander1.digitalWrite(MCP1_gsm_pwrkey, HIGH);
-  delay(1000);
-  expander1.digitalWrite(MCP1_gsm_pwrkey, LOW);
-  delay(5000);
-
-  activeStream = &SERIAL_PORT_UART_MODEM;
+  Serial2.setTxBufferSize(2048);
+  Serial2.setRxBufferSize(2048);
+  Serial2.begin(115200);
+  activeStream = &Serial2;
 #else
   activeStream = mockStream;  // For native, use mock stream by default
 #endif  // ESP32
 }
 
-SerialCommunicator::~SerialCommunicator() {
+inline SerialCommunicator::~SerialCommunicator() {
 #ifdef ESP32
-  SERIAL_PORT_UART_MODEM.end();
+  Serial2.end();
 #endif  // ESP32
 
   delete mockStream;
   mockStream = nullptr;
 }
 
-void SerialCommunicator::mockResponse(const std::string &data) { mockStream->InjectRxData(data); }
+inline void SerialCommunicator::mockResponse(const std::string &data) {
+  mockStream->InjectRxData(data);
+}
 
-void SerialCommunicator::ClearSentData() {
+inline void SerialCommunicator::ClearSentData() {
   if (mockStream) { mockStream->ClearTxData(); }
 }
 
-std::string SerialCommunicator::GetSentData() { return mockStream->GetTxData(); }
+inline int SerialCommunicator::available() { return activeStream->available(); }
 
-int SerialCommunicator::available() { return activeStream->available(); }
+inline int SerialCommunicator::read() { return activeStream->read(); }
 
-int SerialCommunicator::read() { return activeStream->read(); }
+inline int SerialCommunicator::peek() { return activeStream->peek(); }
 
-int SerialCommunicator::peek() { return activeStream->peek(); }
+inline void SerialCommunicator::flush() { activeStream->flush(); }
 
-void SerialCommunicator::flush() { activeStream->flush(); }
-
-void SerialCommunicator::mockResponseWithDelay(const std::string &data, uint32_t delayMs) {
+inline void SerialCommunicator::mockResponseWithDelay(const std::string &data, uint32_t delayMs) {
   InjectDataWithDelay(mockStream, data, delayMs);
 }
 
-size_t SerialCommunicator::write(uint8_t c) {
+inline size_t SerialCommunicator::write(uint8_t c) {
   size_t result = activeStream->write(c);
   if (activeStream != mockStream) { mockStream->write(c); }
   return result;
 }
 
-size_t SerialCommunicator::write(const uint8_t *buffer, size_t size) {
+inline size_t SerialCommunicator::write(const uint8_t *buffer, size_t size) {
   size_t result = activeStream->write(buffer, size);
   if (activeStream != mockStream) { mockStream->write(buffer, size); }
   return result;

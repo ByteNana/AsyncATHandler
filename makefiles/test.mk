@@ -26,7 +26,8 @@ test-esp32:
 	  printf "\n\n\033[1;32m▶ $$d \033[0m\n\n"; \
 	  pio ci $$d/src/main.cpp -c $$d/platformio.ini --lib="."; \
 	done
-	@pio test -d ${HARDW_TEST_DIR} -e test --without-uploading --without-testing -vv
+	@printf "\n\n\033[1;32m▶ test/ \033[0m\n\n"
+	@cd ${HARDW_TEST_DIR} && pio test -e ci --without-uploading --without-testing
 
 ## Flash and run ESP32 hardware test
 flash-esp32-test: test-esp32

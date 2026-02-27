@@ -46,7 +46,7 @@ void loop() {}
 
 ## How To Run Tests
 - Native unit tests (GoogleTest): `make test`
-  - Uses CTest to run all tests in `test/test_native`.
+  - Uses CTest to run all tests in `test/test`.
 - ESP32 build sanity (no upload/run): `make test-esp32`
 - ESP32 flash and run hardware test: `make flash-esp32-test`
 

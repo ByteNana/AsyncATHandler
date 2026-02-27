@@ -4,7 +4,8 @@
 #include <chrono>
 #include <iostream>
 
-#include "common.h"
+#include "BoneBuilder.h"
+#include "SerialCommunicator.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/FreeRTOSConfig.h"
@@ -32,7 +33,7 @@ TEST_F(TaskTest, BasicTaskCreationAndDeletion) {
       mainQUEUE_POLL_PRIORITY, &xHandle);
   ASSERT_EQ(xReturned, pdPASS) << "Task creation failed!";
   ASSERT_NE(xHandle, nullptr) << "Task handle is nullptr!";
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  delay(200);
   EXPECT_EQ(taskRunCount.load(), 1) << "Task did not run or ran multiple times!";
 }
 
@@ -51,16 +52,16 @@ TEST_F(TaskTest, MultiTasksCleanup) {
     BaseType_t result =
         xTaskCreatePinnedToCore(taskFunction, "MultiTask", TASK_STACK_SIZE, &ran, 1, &h, 0);
     ASSERT_EQ(result, pdPASS) << "Failed to create task " << i;
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    delay(5);
   }
   // Longer wait time to ensure all tasks complete
-  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+  delay(300);
   EXPECT_EQ(ran.load(), 5) << "Not all tasks completed successfully";
 }
 
 TEST_F(TaskTest, TicksAdvanceRoughly) {
   auto startTicks = xTaskGetTickCount();
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  delay(100);
   auto endTicks = xTaskGetTickCount();
   // Allow wider tolerance to avoid platform scheduler jitter
   EXPECT_GE(endTicks, startTicks + 70);
@@ -86,7 +87,7 @@ TEST_F(TaskTest, ExternalTaskDeletion) {
   ASSERT_NE(taskHandle, nullptr) << "Task handle is nullptr";
 
   // Wait for task to start running
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  delay(50);
   EXPECT_EQ(taskRunning.load(), 1) << "Task should be running";
 
   // Externally delete the task using the handle
@@ -94,11 +95,11 @@ TEST_F(TaskTest, ExternalTaskDeletion) {
   taskHandle = nullptr;
 
   // Give time for deletion to complete
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  delay(50);
 
   // Task should be gone - we can't directly verify this easily,
   // but if we get here without crashing, the deletion worked
   EXPECT_TRUE(true) << "External task deletion completed";
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES();

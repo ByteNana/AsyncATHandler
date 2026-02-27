@@ -8,18 +8,22 @@
 #include <thread>
 
 #include "AsyncATHandler.h"
-#include "Stream.h"
+#include "BoneBuilder.h"
+#include "SerialCommunicator.h"
 #include "common.h"
 #include "esp_log.h"
 
 using ::testing::NiceMock;
 
 class AsyncATHandlerPromiseTest : public FreeRTOSTest {
+ public:
+  SerialCommunicator* testStream = nullptr;
+  AsyncATHandler* handler = nullptr;
+
  protected:
   void SetUp() override {
     FreeRTOSTest::SetUp();
-    mockStream = new NiceMock<MockStream>();
-    mockStream->SetupDefaults();
+    testStream = new SerialCommunicator();
     handler = new AsyncATHandler();
   }
 
@@ -33,27 +37,23 @@ class AsyncATHandlerPromiseTest : public FreeRTOSTest {
       }
       bool success = CleanupATHandler(handler);
       if (!success) { log_w("Handler teardown may have failed"); }
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      delay(200);
       delete handler;
       handler = nullptr;
     }
-    if (mockStream) {
-      delete mockStream;
-      mockStream = nullptr;
+    if (testStream) {
+      delete testStream;
+      testStream = nullptr;
     }
     FreeRTOSTest::TearDown();
   }
-
- public:
-  NiceMock<MockStream>* mockStream = nullptr;
-  AsyncATHandler* handler = nullptr;
 };
 
 // TEST 1: Basic - Just Promise Creation/Deletion
 TEST_F(AsyncATHandlerPromiseTest, PromiseCreationOnly) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
         vTaskDelay(pdMS_TO_TICKS(100));
 
         ATPromise* promise = handler->sendCommand("AT+TEST");
@@ -72,7 +72,7 @@ TEST_F(AsyncATHandlerPromiseTest, PromiseCreationOnly) {
 TEST_F(AsyncATHandlerPromiseTest, PromiseWaitTimeout) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
         vTaskDelay(pdMS_TO_TICKS(100));
 
         ATPromise* promise = handler->sendCommand("AT+TIMEOUT");
@@ -94,10 +94,10 @@ TEST_F(AsyncATHandlerPromiseTest, PromiseWaitTimeout) {
 TEST_F(AsyncATHandlerPromiseTest, PromiseWithResponse) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
         vTaskDelay(pdMS_TO_TICKS(100));
 
-        InjectDataWithDelay(mockStream, "AT+TEST\r\nOK\r\n", 150);
+        testStream->mockResponseWithDelay("AT+TEST\r\nOK\r\n", 150);
         ATPromise* promise = handler->sendCommand("AT+TEST");
         if (!promise) { throw std::runtime_error("Failed to create promise"); }
 
@@ -126,7 +126,7 @@ TEST_F(AsyncATHandlerPromiseTest, PromiseWithResponse) {
 TEST_F(AsyncATHandlerPromiseTest, PromiseChaining) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
         vTaskDelay(pdMS_TO_TICKS(100));
 
         ATPromise* promise = handler->sendCommand("AT+CSQ")->expect("+CSQ:")->timeout(2000);
@@ -147,7 +147,7 @@ TEST_F(AsyncATHandlerPromiseTest, PromiseChaining) {
 TEST_F(AsyncATHandlerPromiseTest, MultiplePromises) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) { throw std::runtime_error("Handler begin failed"); }
         vTaskDelay(pdMS_TO_TICKS(100));
 
         ATPromise* promise1 = handler->sendCommand("AT+TEST1");
@@ -171,4 +171,4 @@ TEST_F(AsyncATHandlerPromiseTest, MultiplePromises) {
   EXPECT_TRUE(testResult);
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES();

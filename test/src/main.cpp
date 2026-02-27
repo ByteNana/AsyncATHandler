@@ -13,7 +13,7 @@ void setup() {
 
   String response;
   Serial.println("Sending 'AT' command...");
-  bool ok = handler.sendCommand("AT", response, "OK", 1000);
+  bool ok = handler.sendSync("AT", response, 1000);
 
   if (ok) {
     Serial.print("Response: ");

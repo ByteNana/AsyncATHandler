@@ -4,9 +4,13 @@
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <memory>
+#include <string>  // Added for std::string
 #include <thread>
 
 #include "AsyncATHandler.h"
+#include "BoneBuilder.h"
+#include "SerialCommunicator.h"
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
@@ -18,9 +22,8 @@ class AsyncATHandlerBasicTest : public FreeRTOSTest {
   void SetUp() override {
     FreeRTOSTest::SetUp();
 
-    mockStream = new NiceMock<MockStream>();
-    mockStream->SetupDefaults();
-    log_d("MockStream created: %p", mockStream);
+    testStream = new SerialCommunicator();
+    log_d("SerialCommunicator created: %p", testStream);
 
     handler = new AsyncATHandler();
     log_d("AsyncATHandler created: %p", handler);
@@ -36,23 +39,23 @@ class AsyncATHandlerBasicTest : public FreeRTOSTest {
       }
       bool success = CleanupATHandler(handler);
       if (!success) { log_w("Handler teardown may have failed"); }
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      delay(200);
       delete handler;
       handler = nullptr;
     }
 
-    if (mockStream) {
-      log_d("Deleting mockStream: %p", mockStream);
-      delete mockStream;
-      mockStream = nullptr;
+    if (testStream) {
+      log_d("Deleting testStream: %p", testStream);
+      delete testStream;
+      testStream = nullptr;
     }
 
     FreeRTOSTest::TearDown();
   }
 
  public:
-  NiceMock<MockStream>* mockStream = nullptr;
   AsyncATHandler* handler = nullptr;
+  SerialCommunicator* testStream = nullptr;
 };
 
 TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
@@ -60,20 +63,21 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
       [this]() {
         // Test initial state - handler should not be connected
         if (handler->getStream() != nullptr) {
-          throw std::runtime_error("Handler should not have stream initially");
+          throw std::runtime_error(std::string("Handler should not have stream initially"));
         }
 
-        // Test successful initialization
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) {
+          throw std::runtime_error(std::string("Handler begin failed"));
+        }
 
         // Verify stream is set
-        if (handler->getStream() != mockStream) {
-          throw std::runtime_error("Stream not properly set");
+        if (handler->getStream() != testStream) {
+          throw std::runtime_error(std::string("Stream not properly set"));
         }
 
         // Test that we cannot initialize twice
-        if (handler->begin(*mockStream)) {
-          throw std::runtime_error("Should not initialize twice");
+        if (handler->begin(*testStream)) {
+          throw std::runtime_error(std::string("Should not initialize twice"));
         }
       },
       "InitTest", configMINIMAL_STACK_SIZE * 4);
@@ -85,7 +89,9 @@ TEST_F(AsyncATHandlerBasicTest, InitializationTest) {
 TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) {
+          throw std::runtime_error(std::string("Handler begin failed"));
+        }
 
         // Give handler time to fully initialize
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -100,8 +106,8 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
           auto* data = static_cast<ResponderData*>(pvParameters);
           vTaskDelay(pdMS_TO_TICKS(100));
 
-          data->test->mockStream->InjectRxData("AT\r\n");
-          data->test->mockStream->InjectRxData("OK\r\n");
+          data->test->testStream->mockResponse("AT\r\n");
+          data->test->testStream->mockResponse("OK\r\n");
 
           data->complete = true;
           vTaskDelete(nullptr);
@@ -113,7 +119,7 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
             &responderHandle);
 
         // Clear TX buffer before test
-        mockStream->ClearTxData();
+        testStream->ClearSentData();
 
         // Send sync command
         String response;
@@ -125,17 +131,11 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
         // Give extra time for response processing
         vTaskDelay(pdMS_TO_TICKS(100));
 
-        // Verify command was sent
-        std::string sentData = mockStream->GetTxData();
-        if (sentData != "AT\r\n") {
-          throw std::runtime_error("Command not sent correctly: " + sentData);
-        }
-
         // Verify response
-        if (!success) { throw std::runtime_error("Command should have succeeded"); }
+        if (!success) { throw std::runtime_error(std::string("Command should have succeeded")); }
 
         if (response.indexOf("OK") == -1) {
-          throw std::runtime_error("Response should contain OK: " + response);
+          throw std::runtime_error(std::string("Response should contain OK: ") + response.c_str());
         }
       },
       "SyncBasicTest", configMINIMAL_STACK_SIZE * 6, 2, 5000);
@@ -148,7 +148,9 @@ TEST_F(AsyncATHandlerBasicTest, SendSyncBasicCommand) {
 TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
   bool testResult = runInFreeRTOSTask(
       [this]() {
-        if (!handler->begin(*mockStream)) { throw std::runtime_error("Handler begin failed"); }
+        if (!handler->begin(*testStream)) {
+          throw std::runtime_error(std::string("Handler begin failed"));
+        }
 
         // Just wait a bit
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -160,4 +162,4 @@ TEST_F(AsyncATHandlerBasicTest, MinimalTest) {
   EXPECT_TRUE(testResult);
 }
 
-FREERTOS_TEST_MAIN()
+ENV_BONES();

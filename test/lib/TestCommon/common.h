@@ -3,6 +3,10 @@
 #include <freertos/FreeRTOSConfig.h>
 #include <gtest/gtest.h>
 
+#ifdef ESP32
+#include <mocks.h>
+#endif
+
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -25,15 +29,13 @@ class GlobalSchedulerEnvironment : public ::testing::Environment {
       globalSchedulerStarted = true;
       vTaskStartScheduler();
     });
-    while (!globalSchedulerStarted.load()) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    while (!globalSchedulerStarted.load()) { delay(10); }
+    delay(100);
   }
   void TearDown() override {
     if (globalSchedulerThread.joinable()) {
       vTaskEndScheduler();
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      delay(100);
       globalSchedulerThread.join();
     }
   }
@@ -84,7 +86,7 @@ inline bool runInFreeRTOSTask(
 
   uint32_t waitTime = 0;
   while (!taskComplete.load() && waitTime < timeoutMs) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    delay(10);
     waitTime += 10;
   }
 
@@ -100,7 +102,7 @@ inline bool runInFreeRTOSTask(
 
 class FreeRTOSTest : public ::testing::Test {
  protected:
-  void TearDown() override { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+  void TearDown() override { delay(50); }
 };
 
 // Common responder task pattern used across multiple AT handler tests

@@ -1,6 +1,8 @@
 #pragma once
 #include <Arduino.h>
 
+#include <functional>
+
 using URCCallbackFn = void(const String& urc);
 typedef std::function<void(const String& urc)> URCCallback;
 

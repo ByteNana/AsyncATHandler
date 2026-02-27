@@ -35,8 +35,7 @@ class SerialCommunicator : public Stream {
 };
 
 inline SerialCommunicator::SerialCommunicator() {
-  mockStream = new ::testing::NiceMock<MockStream>();
-  mockStream->SetupDefaults();
+  mockStream = new MockStream();
 
 #ifdef ESP32
   Serial2.setTxBufferSize(2048);

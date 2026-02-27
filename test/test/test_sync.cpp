@@ -1,4 +1,3 @@
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <atomic>
@@ -12,8 +11,6 @@
 #include "Stream.h"
 #include "common.h"
 #include "esp_log.h"
-
-using ::testing::NiceMock;
 
 class AsyncATHandlerSyncTest : public FreeRTOSTest {
  public:

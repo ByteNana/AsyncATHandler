@@ -10,13 +10,13 @@ AsyncATHandler is a C++ library for robustly handling AT command communication w
 - ESP32/Arduino support via PlatformIO.
 
 ## Setup & Build
-- Prerequisites (native): `cmake >= 3.15`, a C++17 compiler (e.g., `g++`/`clang++`), `make`.
+- Prerequisites (native): `cmake >= 3.15`, a C++17 compiler (e.g., `g++`/`clang++`), `just`.
 - Optional tools: `clang-format` for formatting checks; PlatformIO CLI (`pio`) for ESP32 builds.
-- Build (native): `make build`
-  - Optional log level (0–5): `make build 3` (defaults to 3)
-- Clean artifacts: `make clean`
-- Format code: `make format`
-- Check formatting: `make check`
+- Build (native): `just build`
+  - Optional log level (0–5): `just build 3` (defaults to 3)
+- Clean artifacts: `just clean`
+- Format code: `just format`
+- Check formatting: `just check`
 
 ## Quick Start (ESP32, PlatformIO)
 ```cpp
@@ -45,10 +45,10 @@ void loop() {}
 ```
 
 ## How To Run Tests
-- Native unit tests (GoogleTest): `make test`
+- Native unit tests (GoogleTest): `just test`
   - Uses CTest to run all tests in `test/test`.
-- ESP32 build sanity (no upload/run): `make test-esp32`
-- ESP32 flash and run hardware test: `make flash-esp32-test`
+- ESP32 build sanity (no upload/run): `just test-esp32`
+- ESP32 flash and run hardware test: `just flash-esp32-test`
 
 ## Documentation
 - Docs index: `docs/README.md`

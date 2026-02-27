@@ -12,8 +12,8 @@ Welcome to the AsyncATHandler documentation. This project targets ESP32 (Arduino
 - ATResponse: response accumulation and status – `./development/ATResponse.md`
 
 ## How-To Guides
-- Run native tests: `make build && make test`
-- Check formatting: `make check`; auto-format: `make format`
-- ESP32 CI-style build: `make test-esp32`
-- Flash ESP32 hardware tests: `make flash-esp32-test`
+- Run native tests: `just build && just test`
+- Check formatting: `just check`; auto-format: `just format`
+- ESP32 CI-style build: `just test-esp32`
+- Flash ESP32 hardware tests: `just flash-esp32-test`
 

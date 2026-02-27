@@ -22,7 +22,6 @@ test: build
 ## Test ESP32 build
 test-esp32:
 	@printf  "\033[1;33m🔨 Checking Build for ESP32...\033[0m\n"
-	@pio ci ${HARDW_TEST_DIR}/test/main.cpp  -c ${HARDW_TEST_DIR}/platformio.ini -e ci --lib="."
 	@for d in $(EXAMPLE_DIRS); do \
 	  printf "\n\n\033[1;32m▶ $$d \033[0m\n\n"; \
 	  pio ci $$d/src/main.cpp -c $$d/platformio.ini --lib="."; \

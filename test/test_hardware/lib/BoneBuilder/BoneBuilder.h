@@ -1,4 +1,3 @@
-#define ESP32 1
 #pragma once
 #ifdef ESP32
 

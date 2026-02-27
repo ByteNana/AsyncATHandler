@@ -1,10 +1,10 @@
 hardw_test_dir := "test"
-example_dirs   := `find examples -mindepth 1 -maxdepth 1 -type d -exec sh -c 'test -f "$1/platformio.ini" && echo "$1"' _ {} \;`
 
 [group('hardware')]
 test-esp32:
     @printf "\033[1;33m Checking Build for ESP32...\033[0m\n"
-    @for d in {{example_dirs}}; do \
+    @find examples -mindepth 1 -maxdepth 1 -type d | while read -r d; do \
+        test -f "$d/platformio.ini" || continue; \
         printf "\n\n\033[1;32m %s \033[0m\n\n" "$d"; \
         pio ci "$d/src/main.cpp" -c "$d/platformio.ini" --lib="."; \
     done

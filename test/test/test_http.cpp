@@ -9,8 +9,6 @@
 #include "common.h"
 #include "esp_log.h"
 
-using ::testing::NiceMock;
-
 class AsyncATHandlerHTTPTest : public FreeRTOSTest {
  public:
   AsyncATHandler* handler;

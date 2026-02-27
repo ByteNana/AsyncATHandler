@@ -1,6 +1,10 @@
 # === TESTS ===
 if(ASYNCAT_HANDLER_BUILD_TESTS_NATIVE)
-  include_directories(${Unity_SOURCE_DIR}/src)
+  include_directories(
+    ${gmock_SOURCE_DIR}/include
+    ${gtest_SOURCE_DIR}/include
+    ${Unity_SOURCE_DIR}/src
+  )
 
   enable_testing()
 

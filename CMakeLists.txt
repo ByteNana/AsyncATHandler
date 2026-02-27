@@ -17,11 +17,7 @@ set(TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test)
 include(cmake/dependencies.cmake)
 
 # === INCLUDE DIRECTORIES ===
-include_directories(
-  ${LIB_SRC_DIR}
-  ${gmock_SOURCE_DIR}/include
-  ${gtest_SOURCE_DIR}/include
-)
+include_directories(${LIB_SRC_DIR})
 
 set(LOG_LEVEL "3" CACHE STRING "Log level (0-5, where 5 is most verbose)")
 set_property(CACHE LOG_LEVEL PROPERTY STRINGS "0" "1" "2" "3" "4" "5")

@@ -9,9 +9,6 @@
 set -euo pipefail
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-REMOTE="${1:-origin}"
-
-ZERO="0000000000000000000000000000000000000000"
 
 # --- master: no direct pushes ---
 if [ "$BRANCH" = "master" ]; then
@@ -24,27 +21,16 @@ fi
 
 # --- rc-*: block force pushes ---
 if [[ "$BRANCH" == rc-* ]]; then
-  while read -r local_ref local_oid remote_ref remote_oid; do
-    # Skip deletes
-    if [ "$local_oid" = "$ZERO" ]; then
-      continue
-    fi
+  remote_oid=$(git rev-parse "origin/$BRANCH" 2>/dev/null) || exit 0  # new branch — allow
 
-    # New branch push (remote_oid is zero) — always allow
-    if [ "$remote_oid" = "$ZERO" ]; then
-      continue
-    fi
-
-    # Check if remote_oid is an ancestor of local_oid (fast-forward check)
-    if ! git merge-base --is-ancestor "$remote_oid" "$local_oid" 2>/dev/null; then
-      echo ""
-      echo "  ERROR: Force push to '${BRANCH}' is not allowed."
-      echo "  The branch '${BRANCH}' is a release candidate — rebasing the remote is forbidden."
-      echo "  Use a normal (fast-forward) push instead."
-      echo ""
-      exit 1
-    fi
-  done
+  if ! git merge-base --is-ancestor "$remote_oid" HEAD 2>/dev/null; then
+    echo ""
+    echo "  ERROR: Force push to '${BRANCH}' is not allowed."
+    echo "  The branch '${BRANCH}' is a release candidate — rebasing the remote is forbidden."
+    echo "  Use a normal (fast-forward) push instead."
+    echo ""
+    exit 1
+  fi
 
   exit 0
 fi

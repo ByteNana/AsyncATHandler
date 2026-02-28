@@ -1,50 +1,115 @@
 # AsyncATHandler
 
-AsyncATHandler is a C++ library for robustly handling AT command communication with ESP32/Arduino systems. It supports asynchronous AT command dispatching, safe command queueing, response parsing, and native unit testing with FreeRTOS/Arduino mocks.
+[![CI](https://github.com/ByteNana/AsyncATHandler/actions/workflows/ci.yml/badge.svg)](https://github.com/ByteNana/AsyncATHandler/actions/workflows/ci.yml)
+[![Formatting](https://github.com/ByteNana/AsyncATHandler/actions/workflows/formatting.yml/badge.svg)](https://github.com/ByteNana/AsyncATHandler/actions/workflows/formatting.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![PlatformIO](https://img.shields.io/badge/PlatformIO-compatible-orange)](https://platformio.org)
+[![ESP32](https://img.shields.io/badge/platform-ESP32-green)](https://www.espressif.com/en/products/socs/esp32)
+
+AsyncATHandler is a C++ library for robust, asynchronous AT command communication on ESP32/Arduino systems. It provides safe command queueing, response parsing, and unsolicited response code (URC) handling — all driven by a dedicated FreeRTOS reader task.
 
 ## Features
-- Asynchronous AT command processing and response
-- Unsolicited response handling
-- Queue-based command/result management
-- Written in portable modern C++ (C++17)
-- Native test suite using GoogleTest and GoogleMock (mocked Arduino/FreeRTOS)
 
-## Directory Structure
-- `src/` — Implementation of AsyncATHandler
-- `test/` — Unit tests, mocks, and native test code
-- `examples/` — Example Arduino sketches
-- `Makefile`, `CMakeLists.txt` — C++ build and test infrastructure
+- Asynchronous AT command processing with a dedicated reader task
+- Unsolicited Response Code (URC) handling via user-provided callbacks
+- Promise-style async API with convenient synchronous helper (`sendSync`)
+- Native unit tests using GoogleTest with FreeRTOS/Arduino shim
+- ESP32/Arduino support via PlatformIO
 
-## Running Native Tests (Linux/macOS)
-The following commands build and run the C++ unit tests:
+## Table of Contents
 
-```sh
-# Install dependencies (if needed):
-sudo apt-get install clang-format cmake g++ make
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Development](#development)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Changelog](#changelog)
+- [License](#license)
 
-# Build and run all tests:
-make test
-# OR equivalent:
-cmake -Bbuild -DNATIVE_BUILD=ON
-cmake --build build
-ctest --output-on-failure --test-dir build
+## Installation
+
+### PlatformIO (recommended)
+
+Add the library to your `platformio.ini`:
+
+```ini
+lib_deps = https://github.com/ByteNana/AsyncATHandler.git
 ```
 
-## Running Hardware Tests (ESP32)
-The following commands build and upload the example sketch to an ESP32 board:
-```sh
-make esp32
+### Manual
+
+Clone the repository into your project's library directory:
+
+```bash
+git clone https://github.com/ByteNana/AsyncATHandler.git
 ```
 
-## Formatting
-Format all code with:
-```sh
-make format
-```
-Check code format (dry-run, CI enforced):
-```sh
-make check-format
+## Quick Start
+
+```cpp
+#include <Arduino.h>
+#include "AsyncATHandler.h"
+
+AsyncATHandler handler;
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) {}
+
+  handler.begin(Serial);
+
+  String response;
+  bool ok = handler.sendSync("AT", response, 1000);
+  if (ok) {
+    Serial.print("Response: ");
+    Serial.println(response);
+  } else {
+    Serial.println("AT command failed or timed out.");
+  }
+}
+
+void loop() {}
 ```
 
----
-For ESP32/Arduino deployment, see `examples/basic` and use PlatformIO or Arduino IDE as usual.
+## Development
+
+<details>
+<summary>Development guide</summary>
+
+### Prerequisites
+
+- cmake >= 3.15
+- C++17 compiler (e.g., `g++` / `clang++`)
+- [just](https://github.com/casey/just)
+- clang-format (optional)
+- PlatformIO CLI (optional)
+
+### Commands
+
+| Command          | Description         |
+| ---------------- | ------------------- |
+| `just build`     | Build native        |
+| `just test`      | Run tests           |
+| `just format`    | Format code         |
+| `just check`     | Check formatting    |
+| `just changelog` | Generate changelog  |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
+
+</details>
+
+## Documentation
+
+See the [docs/README.md](docs/README.md) for full documentation.
+
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to get started, coding standards, and the pull request process.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a list of notable changes to this project.
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

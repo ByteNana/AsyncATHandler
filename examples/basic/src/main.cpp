@@ -6,21 +6,24 @@ AsyncATHandler handler;
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial);
+  while (!Serial) {}
+  delay(200);
 
-  Serial.println("[ESP32] Initializing AsyncATHandler...");
-  handler.begin(Serial);
+  Serial.println("[EXAMPLE] AsyncATHandler basic");
+
+  if (!handler.begin(Serial)) {
+    Serial.println("Failed to start AsyncATHandler");
+    return;
+  }
 
   String response;
-  Serial.println("Sending 'AT' command...");
-  bool ok = handler.sendCommand("AT", response, "OK", 1000);
-
-  if (ok) {
-    Serial.print("Response: ");
+  bool ok = handler.sendSync("AT", response, 1000);
+  Serial.print("sendSync(AT) => ");
+  Serial.println(ok ? "OK" : "FAIL");
+  if (response.length()) {
+    Serial.println("Full response:");
     Serial.println(response);
-  } else {
-    Serial.println("AT command failed or timed out.");
   }
 }
 
-void loop() {}
+void loop() { delay(1000); }

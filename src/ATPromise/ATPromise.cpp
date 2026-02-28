@@ -61,14 +61,14 @@ void ATPromise::addResponseLine(const ResponseLine& line) {
   }
 
   if (line.isFinalResponse()) {
-    log_i("Promise [%u] completed", commandId);
+    log_d("Promise [%u] completed", commandId);
     log_d("Full response:\n%s", response->getFullResponse().c_str());
     if (completionSemaphore) { xSemaphoreGive(completionSemaphore); }
   }
 
   if (!hasExpected) { return; }
   if (expectedResponses.empty()) {
-    log_i("Promise [%u] completed (no more expectations)", commandId);
+    log_d("Promise [%u] completed (no more expectations)", commandId);
     log_d("Full response:\n%s", response->getFullResponse().c_str());
     if (completionSemaphore) { xSemaphoreGive(completionSemaphore); }
   }

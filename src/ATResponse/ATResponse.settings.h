@@ -23,5 +23,3 @@ struct ResponseLine {
            type == ResponseType::FINAL_CME_ERROR;
   }
 };
-
-typedef std::function<void(const String& urc)> URCCallback;

@@ -4,7 +4,7 @@
 
 void AsyncATHandler::readerTaskFunction(void* parameter) {
   AsyncATHandler* handler = static_cast<AsyncATHandler*>(parameter);
-  log_i("Reader task started.");
+  log_v("Reader task started.");
   while (true) {
     handler->processIncomingData();
     vTaskDelay(pdMS_TO_TICKS(10));
@@ -41,7 +41,7 @@ void AsyncATHandler::processCompleteLine(const String& line) {
   responseLine.commandId = 0;
 
   if (type == ResponseType::UNSOLICITED) {
-    handleUnsolicitedResponse(line);
+    urc.handleUnsolicitedResponse(line);
     return;
   }
 
@@ -56,8 +56,4 @@ void AsyncATHandler::processCompleteLine(const String& line) {
       log_e("Failed to acquire mutex for adding response");
     }
   }
-}
-
-void AsyncATHandler::handleUnsolicitedResponse(const String& line) {
-  if (urcCallback) { urcCallback(line); }
 }

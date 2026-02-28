@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(AsyncATHandler VERSION 0.1.1 LANGUAGES C CXX)
+project(AsyncATHandler VERSION 0.2.0 LANGUAGES C CXX)
 include(cmake/compiler_settings.cmake)
 
 set(PROJECT_VERSION_SUFIX "-rc.1")

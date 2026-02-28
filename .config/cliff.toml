@@ -16,7 +16,7 @@ body = """
 {% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}
     ### {{ group | striptags | trim | upper_first }}
-    {% for commit in commits %}
+    {% for commit in commits | unique(attribute="message") %}
         - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
             {% if commit.breaking %}[**breaking**] {% endif %}\
             {{ commit.message | upper_first }}\
@@ -48,7 +48,22 @@ repo = "AsyncATHandler"
 # Parse conventional commits
 conventional_commits = true
 filter_unconventional = true
-split_commits = false
+# Split squash-merge commit bodies into individual entries so each
+# conventional commit line from the PR is parsed separately.
+split_commits = true
+
+# Preprocessors run on each commit message before parsing.
+# Strip noise from squash-merge bodies so only the conventional
+# commit lines remain for the parser.
+commit_preprocessors = [
+    # Remove bullet prefixes added by GitHub squash-merge
+    { pattern = '^\* ', replace = "" },
+    { pattern = '^- ', replace = "" },
+    # Remove Signed-off-by lines
+    { pattern = '^Signed-off-by:.*', replace = "" },
+    # Remove Co-authored-by lines
+    { pattern = '^Co-authored-by:.*', replace = "" },
+]
 
 # Process each "type" into a human-friendly group header
 commit_parsers = [
@@ -61,6 +76,8 @@ commit_parsers = [
     { message = "^test",     group = "🧪 Testing" },
     { message = "^ci",       group = "⚙️ CI/CD" },
     { message = "^build",    group = "📦 Build System" },
+    { message = "^hotfix",   group = "🐛 Bug Fixes" },
+    { message = "^project",  skip = true },
     { message = "^chore",    skip = true },
 ]
 

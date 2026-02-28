@@ -11,6 +11,9 @@
   ],
   "frameworks": ["arduino"],
   "platforms": ["espressif32" ],
+  "repository": { "type": "git", "url": "https://github.com/ByteNana/AsyncATHandler.git" },
+  "homepage": "https://github.com/ByteNana/AsyncATHandler",
+  "license": "MIT",
   "export": {
     "include": [
       "src/*"

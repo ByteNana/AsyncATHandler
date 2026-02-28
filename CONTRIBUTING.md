@@ -10,6 +10,8 @@
 | just | any recent | `brew install just` |
 | Lefthook | any recent | `brew install lefthook` |
 | bump-my-version | any recent | `pip install bump-my-version` |
+| git-cliff | any recent | `brew install git-cliff` |
+| convco | any recent | `brew install convco` |
 
 ## Setup
 
@@ -121,6 +123,7 @@ Lefthook enforces the following hooks:
 | Hook | Check | What it does |
 |---|---|---|
 | `pre-commit` | `format-check` | Runs `just check` on staged `.c/.cpp/.h/.hpp` files |
+| `commit-msg` | `conventional-commit` | Validates the commit message follows [Conventional Commits](https://www.conventionalcommits.org/) via `convco` |
 | `pre-push` | `branch-protection` | Blocks direct pushes to `master`; blocks force pushes to `rc-*` |
 | `pre-push` | `version-validation` | On `rc-*` branches, ensures `CMakeLists.txt` VERSION matches the branch name |
 
@@ -139,3 +142,9 @@ Use sparingly and only when you understand why the hook is failing.
 - Run `just format` to auto-format all files in `src/`, `test/`, and `examples/`
 - Run `just check` to verify formatting without modifying files
 - The `pre-commit` hook runs `just check` automatically
+
+## Commit Messages
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/). All commit messages are validated by `convco` via the `commit-msg` hook.
+
+Common prefixes: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `ci:`, `build:`.

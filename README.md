@@ -1,24 +1,51 @@
 # AsyncATHandler
 
-AsyncATHandler is a C++ library for robustly handling AT command communication with ESP32/Arduino systems. It supports asynchronous AT command dispatching, safe command queueing and response parsing.
+[![CI](https://github.com/ByteNana/AsyncATHandler/actions/workflows/ci.yml/badge.svg)](https://github.com/ByteNana/AsyncATHandler/actions/workflows/ci.yml)
+[![Formatting](https://github.com/ByteNana/AsyncATHandler/actions/workflows/formatting.yml/badge.svg)](https://github.com/ByteNana/AsyncATHandler/actions/workflows/formatting.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![PlatformIO](https://img.shields.io/badge/PlatformIO-compatible-orange)](https://platformio.org)
+[![ESP32](https://img.shields.io/badge/platform-ESP32-green)](https://www.espressif.com/en/products/socs/esp32)
 
-## Overview & Main Features
-- Asynchronous AT command processing with a dedicated reader task.
-- Unsolicited response (URC) handling via user-provided callback.
-- Promise-style async API plus a convenient synchronous helper (`sendSync`).
-- Native tests using GoogleTest (fetched via CMake) and an in-repo FreeRTOS/Arduino shim.
-- ESP32/Arduino support via PlatformIO.
+AsyncATHandler is a C++ library for robust, asynchronous AT command communication on ESP32/Arduino systems. It provides safe command queueing, response parsing, and unsolicited response code (URC) handling — all driven by a dedicated FreeRTOS reader task.
 
-## Setup & Build
-- Prerequisites (native): `cmake >= 3.15`, a C++17 compiler (e.g., `g++`/`clang++`), `just`.
-- Optional tools: `clang-format` for formatting checks; PlatformIO CLI (`pio`) for ESP32 builds.
-- Build (native): `just build`
-  - Optional log level (0–5): `just build 3` (defaults to 3)
-- Clean artifacts: `just clean`
-- Format code: `just format`
-- Check formatting: `just check`
+## Features
 
-## Quick Start (ESP32, PlatformIO)
+- Asynchronous AT command processing with a dedicated reader task
+- Unsolicited Response Code (URC) handling via user-provided callbacks
+- Promise-style async API with convenient synchronous helper (`sendSync`)
+- Native unit tests using GoogleTest with FreeRTOS/Arduino shim
+- ESP32/Arduino support via PlatformIO
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Development](#development)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Changelog](#changelog)
+- [License](#license)
+
+## Installation
+
+### PlatformIO (recommended)
+
+Add the library to your `platformio.ini`:
+
+```ini
+lib_deps = https://github.com/ByteNana/AsyncATHandler.git
+```
+
+### Manual
+
+Clone the repository into your project's library directory:
+
+```bash
+git clone https://github.com/ByteNana/AsyncATHandler.git
+```
+
+## Quick Start
+
 ```cpp
 #include <Arduino.h>
 #include "AsyncATHandler.h"
@@ -44,20 +71,45 @@ void setup() {
 void loop() {}
 ```
 
-## How To Run Tests
-- Native unit tests (GoogleTest): `just test`
-  - Uses CTest to run all tests in `test/test`.
-- ESP32 build sanity (no upload/run): `just test-esp32`
-- ESP32 flash and run hardware test: `just flash-esp32-test`
+## Development
+
+<details>
+<summary>Development guide</summary>
+
+### Prerequisites
+
+- cmake >= 3.15
+- C++17 compiler (e.g., `g++` / `clang++`)
+- [just](https://github.com/casey/just)
+- clang-format (optional)
+- PlatformIO CLI (optional)
+
+### Commands
+
+| Command          | Description         |
+| ---------------- | ------------------- |
+| `just build`     | Build native        |
+| `just test`      | Run tests           |
+| `just format`    | Format code         |
+| `just check`     | Check formatting    |
+| `just changelog` | Generate changelog  |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
+
+</details>
 
 ## Documentation
-- Docs index: `docs/README.md`
 
-- Core components:
-  - `docs/development/AsyncATHandler.md`
-  - `docs/development/ATPromise.md`
-  - `docs/development/ATResponse.md`
+See the [docs/README.md](docs/README.md) for full documentation.
 
-Notes
-- Native tests fetch GoogleTest/Unity via CMake’s FetchContent on first configure.
-- Examples are PlatformIO-only; place PlatformIO example projects under `examples/`.
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to get started, coding standards, and the pull request process.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a list of notable changes to this project.
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

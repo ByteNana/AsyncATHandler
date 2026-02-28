@@ -9,6 +9,11 @@ pre-commit:
       glob: "*.{c,cpp,h,hpp}"
       run: just check
 
+commit-msg:
+  commands:
+    conventional-commit:
+      run: convco check --from-stdin --strip < {1}
+
 pre-push:
   commands:
     branch-protection:

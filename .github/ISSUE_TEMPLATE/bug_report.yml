@@ -1,0 +1,36 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version & platform
+      description: Library version and platform (e.g. "0.1.1 on ESP32 via PlatformIO").
+      placeholder: e.g. 0.1.1 / ESP32 (PlatformIO)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Configure handler with ...
+        2. Send command ...
+        3. Observe ...
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Logs, screenshots, or any other relevant information.
+    validations:
+      required: false
